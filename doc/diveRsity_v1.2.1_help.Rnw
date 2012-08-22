@@ -1,0 +1,5 @@
+%\VignetteIndexEntry{diveRsity_help_[compiled]}
+\documentclass{article}
+\begin{document}
+\end{document}
+

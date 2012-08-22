@@ -1,12 +1,12 @@
-\name{readGenepop}
-\alias{readGenepop}
+\name{readGenepop.user}
+\alias{readGenepop.user}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
 A function to calculate allele frequencies from genepop files.
 }
 
 \description{
-\code{readGenepop} allows the calculation of various parameters from 3 digit and 2 digit genepop files. The purpose of the function is mainly as a data manipulation process to allow for easy downstream analysis.
+\code{readGenepop.user} allows the calculation of various parameters from 3 digit and 2 digit genepop files. The purpose of the function is mainly as a data manipulation process to allow for easy downstream analysis.
 }
 
 \details{
@@ -15,7 +15,7 @@ From this example it is clear that the function will be particularly useful for 
 }
 
 \usage{
-readGenepop(infile = NULL, gp = 3, bootstrap = FALSE)
+readGenepop.user(infile = NULL, gp = 3, bootstrap = FALSE)
 }
 
 \arguments{
@@ -25,6 +25,7 @@ readGenepop(infile = NULL, gp = 3, bootstrap = FALSE)
 \item{gp}{A numeric argument specifying the format of the \code{infile}. Either `3' or `2' are accepted as arguments. Default is \code{ gp = 3}.}
 
 \item{bootstrap}{A logical argument specifying whether the user would like the \code{infile} data bootstrapped. If \code{bootstrap = TRUE} a genepop format object is returned. See \code{bootstrap_file} in the value section below.}
+
 }
 
 \value{
@@ -61,8 +62,9 @@ Kevin Keenan <kkeenan02@qub.ac.uk>
 \examples{
 # Code to plot ordered allele fragment sizes to assess mutation model.
 data(Test_data, package = "diveRsity") # define data
-x <- readGenepop(infile = Test_data, gp = 3, bootstrap = FALSE)
-locus10_pop1 <- c(x$pop_alleles[[1]][,10], x$pop_alleles[[2]][,10])
+x <- readGenepop.user(infile = Test_data, gp = 3, bootstrap = FALSE)
+locus10_pop1 <- c(x$pop_alleles[[1]][[2]][,10],
+                  x$pop_alleles[[1]][[2]][,10])
 sort_order <- order(locus10_pop1, decreasing = FALSE) #sort alleles
 plot(locus10_pop1[sort_order], col="red", ylab = "Allele size")
 }

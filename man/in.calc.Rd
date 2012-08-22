@@ -16,7 +16,7 @@ All results will be written to a user defined folder ("working_directory/outfile
 \usage{
 in.calc(infile, outfile = NULL, gp = 3, 
         bs_locus = FALSE, bs_pairwise = FALSE, 
-        bootstraps = 0, Plot = FALSE)
+        bootstraps = 0, Plot = FALSE, parallel = FALSE)
 }
 \arguments{
 
@@ -33,7 +33,9 @@ in.calc(infile, outfile = NULL, gp = 3,
 \item{bootstraps}{Determines the number of bootstrap iterations to be carried out. The default value is \code{bootstraps = 0}, this is only valid when 
 all bootstrap options are false.  Again, there is no limit on the number of bootstrap iterations, however very large numbers of bootstrap iterations (i.e. > 1000) will take quite a long time to run.}
 
-\item{Plot}{Optional interactive \code{.png} image file of the plotted bootstrap results for loci if \code{bs_locus = TRUE}. The default option is \code{Plot = FALSE}.}
+\item{Plot}{Optional \code{.png} image file of the plotted bootstrap results for loci if \code{bs_locus = TRUE}. The default option is \code{Plot = FALSE}.}
+
+\item{parallel}{Allows for parallel computation of pairwise locus \emph{In}. The number of available core is automatically detected if \code{parallel = TRUE}.}
 }
 
 \value{
@@ -42,7 +44,7 @@ all bootstrap options are false.  Again, there is no limit on the number of boot
 
 \item{l_bootstrap}{A character matrix of locus \emph{In} values as well as 95\% confidence intervals, calculated from bootstraps (Manly, 1997). Returned when \code{bs_locus} is set to \code{TRUE}.}
 
-\item{PW_bootstrap}{A character matrix of bootstrapped pairwise locus \emph{In} values.}
+\item{PW_bootstrap}{A list of matrices of bootstrapped pairwise locus \emph{In} results corresponding to each pairwise comparison.}
 }
 
 \references{
@@ -68,5 +70,5 @@ Kevin Keenan <kkeenan02@qub.ac.uk>
 #
 # test_results<-in.calc(infile = Test_data, outfile = 'out',
 #                       gp = 3, bs_locus = TRUE, bs_pairwise = TRUE,
-#                       bootstraps = 10, Plot = FALSE)
+#                       bootstraps = 10, Plot = FALSE, parallel = TRUE)
 }

@@ -17,7 +17,8 @@ All results will be written to a user defined folder ("working_directory/outfile
 
 div.part(infile, outfile = NULL, gp = 3, 
          bs_locus = FALSE, bs_pairwise = FALSE, 
-	         bootstraps = 0, Plot = FALSE)
+         bootstraps = 0, Plot = FALSE, 
+         parallel = FALSE)
 }
 			   
 \arguments{
@@ -32,9 +33,11 @@ div.part(infile, outfile = NULL, gp = 3,
 
 \item{bs_pairwise}{Gives users the option to bootstrap statistics across all loci for each pairwise population comparison. Results will be written to a \code{.xlsx} file by default if the package \code{'xlsx'} is installed, and to a \code{.html} file if \code{Plot=TRUE}. If \code{'xlsx'} is not installed, results will be written to \code{.txt} files.}
 
-\item{bootstraps}{Determines the number of bootstrap iterations to be carried out. The default value is \code{bootstraps = 0}, this is only valid when all bootstrap options are false. There is no limit on the number of bootstrap iterations, however very large numbers of bootstrap iterations (< 1000) on even modest data sets (e.g. 265 individuals x 38 loci) will take over 30 minutes to run on a most PCs.}
+\item{bootstraps}{Determines the number of bootstrap iterations to be carried out. The default value is \code{bootstraps = 0}, this is only valid when all bootstrap options are false. There is no limit on the number of bootstrap iterations, however very large numbers of bootstrap iterations (< 1000) on even modest data sets (e.g. 265 individuals x 38 loci) will take over 30 minutes to run on a most PCs).}
 
 \item{Plot}{Optional interactive \code{.html} image file of the plotted bootstrap results for loci if \code{bs_locus = TRUE} and pairwise population comparisons if \code{bs_pairwise = TRUE}. The default option is \code{Plot = FALSE}.}
+
+\item{parallel}{A logical input, indicating whether your analysis should be run in parallel mode or sequentially. \code{parallel} = \code{TRUE} is only valid if the packages, \code{parallel}, \code{doParallel} and \code{foreach} are installed.}
 }
 
 \value{
@@ -42,6 +45,8 @@ div.part(infile, outfile = NULL, gp = 3,
 \item{standard}{A matrix containing identical data to the \code{Standard_stats} worksheet in the \code{.xlsx} workbook.}
 
 \item{estimate}{A matrix containing identical data to the \code{Estimated_stats} worksheet in the \code{.xlsx} workbook.}
+
+\item{pairwise}{A group of six matrices containing population pairwise statistics. This object is identical to that written as `pairwise-stats` in the \code{.xlsx} workbook.}
 
 \item{bs_locus}{A list containing six matrices of locus values for \emph{Gst}, \emph{G'st}, \emph{D(Jost)}, \emph{Gst-(est)}, \emph{G'st-(est)}, and \emph{D(Jost)-(est)} along with their respective 95\% confidence interval.}
 
@@ -63,6 +68,14 @@ Manly, F.J., ``Randomization, bootstrap and Monte Carlo methods in biology'', Ch
 
 Nei, M. and Chesser, R., ``Estimation of fixation indices and gene diver-
 sities,'' Ann. Hum. Genet, vol. 47, no. Pt 3, pp. 253-259, (1983).
+
+R Development Core Team (2011). R: A language and environment for statistical
+computing. R Foundation for Statistical Computing, Vienna, Austria. ISBN
+3-900051-07-0, URL http://www.R-project.org/.
+
+Revolution Analytics (2012). doParallel: Foreach parallel adaptor for the parallel package. R package version 1.0.1. http://CRAN.R-project.org/package=doParallel
+
+Revolution Analytics (2012). foreach: Foreach looping construct for R. R package version 1.4.0. http://CRAN.R-project.org/package=foreach
 
 Rousset, F., ``genepop'007: a complete re-implementation of the genepop
 software for Windows and Linux.,'' Molecular ecology resources, vol. 8,
