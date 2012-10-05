@@ -1,10 +1,10 @@
-051d04a0d5104898926b10761e6e00e1 *DESCRIPTION
+d4c03823d85e7297a87c24d19a1b3c8c *DESCRIPTION
 63990c05d7ec075c2cc3f5a9971e7ed8 *NAMESPACE
-8e772fa8e8c139b644c6abc0b5d813b5 *R/diveRsity_v1.2.2.R
+7efa615888091cd499b09f401129c9e1 *R/diveRsity_v1.2.3.R
 b53119ded3fd681dcac25d86e2d4083e *data/Test_data.rda
-5c8229d11b652081053117d4b76feb34 *doc/diveRsity_v1.2.1_Help.pdf
-47e9cfac3163987197d6f7d0c26b105e *doc/diveRsity_v1.2.1_help.Rnw
+056a0dd61558c66756b7f283db527752 *inst/doc/diveRsity_v1.2.3_help.Rnw
+b90c848d97ff588dee7d504c2657809a *inst/doc/diveRsity_v1.2.3_help.pdf
 5dea0219bdfd1c2199c93485c63bdfd7 *man/Test_data.rd
-8b0bda3b58881b357a78cde87a451a78 *man/div.part.Rd
+d93b791cc899bd268ccdde25fe1bf79d *man/div.part.Rd
 f47bc65628d271cc0b7556ebf752b04b *man/in.calc.Rd
 3f25c0fc25318013396553ba33ddbe8a *man/readGenepop.user.Rd

@@ -15,8 +15,9 @@ All results will be written to a user defined folder ("working_directory/outfile
 
 \usage{
 
-div.part(infile, outfile = NULL, gp = 3, 
-         bs_locus = FALSE, bs_pairwise = FALSE, 
+div.part(infile, outfile = NULL, gp = 3,
+         WC_Fst = FALSE, bs_locus = FALSE, 
+         bs_pairwise = FALSE,
          bootstraps = 0, Plot = FALSE, 
          parallel = FALSE)
 }
@@ -28,6 +29,8 @@ div.part(infile, outfile = NULL, gp = 3,
 \item{outfile}{Allows users to specify a prefix for an output folder. Name must a character string enclosed in either \dQuote{} or `'.}
 
 \item{gp}{Specifies the digit format of the \code{infile}. Either 3 (default) or 2.}
+
+\item{WC_Fst}{A Logical argument indicating whether Weir & Cockerham's 1984 F-statistics should be calculated. NOTE - Calculating these statistics adds significant time to analysis when carrying out pairwise comparisons.}
 
 \item{bs_locus}{Gives users the option to bootstrap locus statistics. Results will be written to \code{.xlsx} workbook by default if the package \code{'xlsx'} is installed, and to a \code{.html} file if \code{Plot=TRUE}. If \code{'xlsx'} is not installed, results will be written to \code{.txt} files.}
 
@@ -80,6 +83,8 @@ Revolution Analytics (2012). foreach: Foreach looping construct for R. R package
 Rousset, F., ``genepop'007: a complete re-implementation of the genepop
 software for Windows and Linux.,'' Molecular ecology resources, vol. 8,
 no. 1, pp. 103-6, (2008).
+
+Weir, B.S. & Cockerham, C.C., Estimating F-Statistics, for the Analysis of Population Structure, Evolution, vol. 38, No. 6, pp. 1358-1370 (1984). 
 }
 \author{Kevin Keenan <kkeenan02@qub.ac.uk>}
 

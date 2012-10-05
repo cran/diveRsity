@@ -1,22 +1,23 @@
 ################################################################################
 ################################################################################
-##                              diveRsity v2.0                                ##  
+##                              diveRsity v1.2.3                              ##  
 ##                            by Kevin Keenan QUB                             ##  
 ##            An R package for the calculation of differentiation             ##
 ##              statistics and locus informativeness statistics               ##  
-##                    V 2.0 allows parallel computations                      ##  
+##                V 1.2.0 and up allows parallel computations                 ##  
 ##                       copyright Kevin Keenan 2012                          ##  
 ################################################################################
 ################################################################################
 
 # div.part, a wrapper function for the calculation of differentiation stats.
-div.part<-function(infile,outfile=NULL, gp=3, 
-                   bs_locus=FALSE, bs_pairwise=FALSE, 
-                   bootstraps=0, Plot=FALSE, parallel = FALSE){
+div.part<-function(infile, outfile = NULL, gp = 3, WC_Fst = FALSE, 
+                   bs_locus = FALSE, bs_pairwise = FALSE, 
+                   bootstraps = 0, Plot = FALSE, parallel = FALSE){
   ############################ Argument definitions ############################
   D<-infile
   on<-outfile
   gp<-gp
+  fst<-WC_Fst
   bstrps<-bootstraps
   bsls<-bs_locus
   bspw<-bs_pairwise
@@ -36,8 +37,7 @@ div.part<-function(infile,outfile=NULL, gp=3,
     cat(noquote(bs_warning))
   } else {
     #Use pre.div to calculate the standard global and locus stats
-    pre_data_in<-list(D,gp,FALSE,TRUE)
-    names(pre_data_in)<-c("infile","gp","bootstrap","ls")
+    pre_data_in<-list(infile=D,gp=gp,bootstrap="FALSE",ls="TRUE",fst=fst)
     accDat<-pre.divLowMemory(pre_data_in)
     # create a directory for output
     suppressWarnings(dir.create(path=paste(getwd(),"/",on,
@@ -88,8 +88,14 @@ div.part<-function(infile,outfile=NULL, gp=3,
       }
       cat(noquote(Warning2))
     }
-    namer<-c("Gst","G_hed_st","D_Jost","Gst_est","G_hed_st_est",
-             "D_Jost_est")
+    if(fst==TRUE){
+      namer<-c("Gst","G_hed_st","D_Jost","Gst_est","G_hed_st_est",
+               "D_Jost_est","Fis_WC","Fst_WC","Fit_WC")
+    } else {
+      namer<-c("Gst","G_hed_st","D_Jost","Gst_est","G_hed_st_est",
+               "D_Jost_est")
+    }
+      
     ############################################################################
     # output file
     # multilocus stats vector
@@ -115,8 +121,19 @@ div.part<-function(infile,outfile=NULL, gp=3,
                          accDat[[28]]))
     colnames(ot2)<-c("loci","Harmonic_N","H_st_est","D_st_est","G_st_est",
                      "G_hed_st_est","D_Jost_est")
-    
-    plot_data321<-c("Overall","","","",accDat[[24]],accDat[[27]],accDat[[28]])
+    if(fst==TRUE){
+      ot2<-cbind(ot2, accDat$fstats[,1:3])
+    }
+    if(fst==TRUE){
+      plot_data321<-c("Overall","","","",accDat$gst_est_all,
+                      accDat$gst_est_all_hedrick,
+                      accDat$djost_est_all,
+                      as.numeric(accDat$fstats[(accDat$nloci+1),2]))
+    } else {
+      plot_data321<-c("Overall","","","",accDat$gst_est_all,
+                      accDat$gst_est_all_hedrick,
+                      accDat$djost_est_all)
+    } 
     if(write_res==TRUE){
       # write data to excel
       # Load dependencies
@@ -232,8 +249,7 @@ div.part<-function(infile,outfile=NULL, gp=3,
       if (para == TRUE && para_pack == FALSE) {
 
         #vectorize prallele#
-        gp_inls<-list(D,gp,TRUE,TRUE)
-        names(gp_inls)<-c("infile","gp","bootstrap","ls")
+        gp_inls<-list(infile=D,gp=gp,bootstrap="TRUE",ls="TRUE",fst=fst)
         gp_in<-list()
         for(i in 1:bstrps){
           gp_in[[i]]<-gp_inls
@@ -245,6 +261,17 @@ div.part<-function(infile,outfile=NULL, gp=3,
         z<-gc(reset=T, verbose=FALSE)        ## tidy up
         rm(z)                              ###
         #vectorize data extraction#
+        if(fst==TRUE){
+          bs_glb<-do.call("rbind",lapply(1:bstrps, function(x){
+            c(round(bs_loc[[x]]$gst_all,4),
+              round(bs_loc[[x]]$gst_all_hedrick,4),
+              round(bs_loc[[x]]$djost_all,4),
+              round(bs_loc[[x]]$gst_est_all,4),
+              round(bs_loc[[x]]$gst_est_all_hedrick,4),
+              round(bs_loc[[x]]$djost_est_all,4),
+              as.numeric(bs_loc[[x]]$fstats[(accDat$nloci+1),1:3]))
+          }))
+        }else{
         bs_glb<-do.call("rbind",lapply(1:bstrps, function(x){
           c(round(bs_loc[[x]]$gst_all,4),
             round(bs_loc[[x]]$gst_all_hedrick,4),
@@ -253,19 +280,31 @@ div.part<-function(infile,outfile=NULL, gp=3,
             round(bs_loc[[x]]$gst_est_all_hedrick,4),
             round(bs_loc[[x]]$djost_est_all,4))
         }))
+        }
        bs_std<-lapply(1:accDat$nloci, function(x){
          do.call("rbind",lapply(1:length(bs_loc), function(y){
            c(round(bs_loc[[y]]$gst[x],4),
              round(bs_loc[[y]]$gst_hedrick[x],4),
              round(bs_loc[[y]]$djost[x],4))}))
        })
-      bs_est<-lapply(1:accDat$nloci, function(x){
-        do.call("rbind",lapply(1:length(bs_loc), function(y){
-          c(round(bs_loc[[y]]$gst_est[x],4),
-            round(bs_loc[[y]]$gst_est_hedrick[x],4),
-            round(bs_loc[[y]]$djost_est[x],4))
-          }))
-      })
+        if(fst==TRUE){
+          bs_est<-lapply(1:accDat$nloci, function(x){
+            do.call("rbind",lapply(1:length(bs_loc), function(y){
+              c(round(bs_loc[[y]]$gst_est[x],4),
+                round(bs_loc[[y]]$gst_est_hedrick[x],4),
+                round(bs_loc[[y]]$djost_est[x],4),
+                as.numeric(bs_loc[[y]]$fstats[x,1:3]))
+            }))
+          })
+        } else {
+          bs_est<-lapply(1:accDat$nloci, function(x){
+            do.call("rbind",lapply(1:length(bs_loc), function(y){
+              c(round(bs_loc[[y]]$gst_est[x],4),
+                round(bs_loc[[y]]$gst_est_hedrick[x],4),
+                round(bs_loc[[y]]$djost_est[x],4))
+            }))
+          })
+        }
         rm(bs_loc)                  ###
         z<-gc(reset=T)                ### tidy up
         rm(z)                       ###
@@ -273,8 +312,7 @@ div.part<-function(infile,outfile=NULL, gp=3,
       } else {
         #vectorize non-parallel#
 
-        gp_inls<-list(D,gp,TRUE,TRUE)
-        names(gp_inls)<-c("infile","gp","bootstrap","ls")
+        gp_inls<-list(infile=D,gp=gp,bootstrap="TRUE",ls="TRUE",fst=fst)
         gp_in<-list()
         for(i in 1:bstrps){
           gp_in[[i]]<-gp_inls
@@ -284,26 +322,50 @@ div.part<-function(infile,outfile=NULL, gp=3,
         rm(gp_in)                          ###
         z<-gc(reset=T, verbose=FALSE)        ## tidy up
         rm(z)                              ###
-        bs_glb<-do.call("rbind",lapply(1:bstrps, function(x){
-          c(round(bs_loc[[x]]$gst_all,4),
-            round(bs_loc[[x]]$gst_all_hedrick,4),
-            round(bs_loc[[x]]$djost_all,4),
-            round(bs_loc[[x]]$gst_est_all,4),
-            round(bs_loc[[x]]$gst_est_all_hedrick,4),
-            round(bs_loc[[x]]$djost_est_all,4))
-        }))
+        if(fst==TRUE){
+          bs_glb<-do.call("rbind",lapply(1:bstrps, function(x){
+            c(round(bs_loc[[x]]$gst_all,4),
+              round(bs_loc[[x]]$gst_all_hedrick,4),
+              round(bs_loc[[x]]$djost_all,4),
+              round(bs_loc[[x]]$gst_est_all,4),
+              round(bs_loc[[x]]$gst_est_all_hedrick,4),
+              round(bs_loc[[x]]$djost_est_all,4),
+              as.numeric(bs_loc[[x]]$fstats[(accDat$nloci+1),1:3]))
+          }))
+        }else{
+          bs_glb<-do.call("rbind",lapply(1:bstrps, function(x){
+            c(round(bs_loc[[x]]$gst_all,4),
+              round(bs_loc[[x]]$gst_all_hedrick,4),
+              round(bs_loc[[x]]$djost_all,4),
+              round(bs_loc[[x]]$gst_est_all,4),
+              round(bs_loc[[x]]$gst_est_all_hedrick,4),
+              round(bs_loc[[x]]$djost_est_all,4))
+          }))
+        }
         bs_std<-lapply(1:accDat$nloci, function(x){
           do.call("rbind",lapply(1:length(bs_loc), function(y){
             c(round(bs_loc[[y]]$gst[x],4),
               round(bs_loc[[y]]$gst_hedrick[x],4),
               round(bs_loc[[y]]$djost[x],4))}))
         })
-        bs_est<-lapply(1:accDat$nloci, function(x){
-          do.call("rbind",lapply(1:length(bs_loc), function(y){
-            c(round(bs_loc[[y]]$gst_est[x],4),
-              round(bs_loc[[y]]$gst_est_hedrick[x],4),
-              round(bs_loc[[y]]$djost_est[x],4))}))
-        })
+        if(fst==TRUE){
+          bs_est<-lapply(1:accDat$nloci, function(x){
+            do.call("rbind",lapply(1:length(bs_loc), function(y){
+              c(round(bs_loc[[y]]$gst_est[x],4),
+                round(bs_loc[[y]]$gst_est_hedrick[x],4),
+                round(bs_loc[[y]]$djost_est[x],4),
+                as.numeric(bs_loc[[y]]$fstats[x,1:3]))
+            }))
+          })
+        } else {
+          bs_est<-lapply(1:accDat$nloci, function(x){
+            do.call("rbind",lapply(1:length(bs_loc), function(y){
+              c(round(bs_loc[[y]]$gst_est[x],4),
+                round(bs_loc[[y]]$gst_est_hedrick[x],4),
+                round(bs_loc[[y]]$djost_est[x],4))
+            }))
+          })
+        }
         rm(bs_loc)
         z<-gc(reset=T)
         rm(z)
@@ -312,7 +374,11 @@ div.part<-function(infile,outfile=NULL, gp=3,
       
 
     #vectorize#
-     bs_res<-lapply(1:6,function(x){matrix(ncol=3, nrow=(accDat$nloci+1))})
+    if(fst==TRUE){
+      bs_res<-lapply(1:9,function(x){matrix(ncol=3, nrow=(accDat$nloci+1))})
+    } else {
+      bs_res<-lapply(1:6,function(x){matrix(ncol=3, nrow=(accDat$nloci+1))})
+    }
       bs_join<-cbind(bs_std, bs_est)
       ciCalc<-function(x){
         res<-lapply(x, function(y){
@@ -321,24 +387,39 @@ div.part<-function(infile,outfile=NULL, gp=3,
           }
           apply(y,2,ci)
         })
-        return(c(res[[1]][1:3],res[[2]][1:3]))
+        return(c(res[[1]],res[[2]]))
       }
       ci<-function(x){
         sd(na.omit(x))*1.96
       }
       bs_cis<-t(apply(bs_join, 1, ciCalc))
       bs_cis<-rbind(bs_cis, apply(bs_glb,2,ci))
-      for(i in 1:6){
-        if(i <= 3){
-          bs_res[[i]][,1]<-as.numeric(ot1[,(i+3)])
-          bs_res[[i]][,2]<-round(as.numeric(ot1[,(i+3)])-bs_cis[,i],4)
-          bs_res[[i]][,3]<-round(as.numeric(ot1[,(i+3)])+bs_cis[,i],4)
-        } else {
-          bs_res[[i]][,1]<-as.numeric(ot2[,(i+1)])
-          bs_res[[i]][,2]<-round(as.numeric(ot2[,(i+1)])-bs_cis[,i],4)
-          bs_res[[i]][,3]<-round(as.numeric(ot2[,(i+1)])+bs_cis[,i],4)
+      if(fst==TRUE){
+        for(i in 1:9){
+          if(i <= 3){
+            bs_res[[i]][,1]<-as.numeric(ot1[,(i+3)])
+            bs_res[[i]][,2]<-round(as.numeric(ot1[,(i+3)])-bs_cis[,i],4)
+            bs_res[[i]][,3]<-round(as.numeric(ot1[,(i+3)])+bs_cis[,i],4)
+          } else {
+            bs_res[[i]][,1]<-as.numeric(ot2[,(i+1)])
+            bs_res[[i]][,2]<-round(as.numeric(ot2[,(i+1)])-bs_cis[,i],4)
+            bs_res[[i]][,3]<-round(as.numeric(ot2[,(i+1)])+bs_cis[,i],4)
+          }
+          bs_res[[i]][is.na(bs_res[[i]])]<-0
         }
-        bs_res[[i]][is.na(bs_res[[i]])]<-0
+      } else {
+        for(i in 1:6){
+          if(i <= 3){
+            bs_res[[i]][,1]<-as.numeric(ot1[,(i+3)])
+            bs_res[[i]][,2]<-round(as.numeric(ot1[,(i+3)])-bs_cis[,i],4)
+            bs_res[[i]][,3]<-round(as.numeric(ot1[,(i+3)])+bs_cis[,i],4)
+          } else {
+            bs_res[[i]][,1]<-as.numeric(ot2[,(i+1)])
+            bs_res[[i]][,2]<-round(as.numeric(ot2[,(i+1)])-bs_cis[,i],4)
+            bs_res[[i]][,3]<-round(as.numeric(ot2[,(i+1)])+bs_cis[,i],4)
+          }
+          bs_res[[i]][is.na(bs_res[[i]])]<-0
+        }
       }
       
       names(bs_res)<-namer
@@ -353,10 +434,18 @@ div.part<-function(infile,outfile=NULL, gp=3,
       bs_out<-matrix(rbind(hdr,c(names(bs_res)[1],"","",""),
                            cbind(c(accDat$locus_names,"Overall"),
                                  bs_res[[1]])),ncol=4)
-      for(i in 2:6){
-        bs_out<-matrix(rbind(bs_out,c(names(bs_res)[i],"","",""),
-                             cbind(c(accDat$locus_names,"Global"),
-                                   bs_res[[i]])),ncol=4)
+      if(fst==TRUE){
+        for(i in 2:9){
+          bs_out<-matrix(rbind(bs_out,c(names(bs_res)[i],"","",""),
+                               cbind(c(accDat$locus_names,"Global"),
+                                     bs_res[[i]])),ncol=4)
+        }
+      } else {
+        for(i in 2:6){
+          bs_out<-matrix(rbind(bs_out,c(names(bs_res)[i],"","",""),
+                               cbind(c(accDat$locus_names,"Global"),
+                                     bs_res[[i]])),ncol=4)
+        }
       }
       if(write_res==TRUE){
         write.xlsx(bs_out,file=paste(of,"[div.part].xlsx",sep=""),
@@ -372,7 +461,8 @@ div.part<-function(infile,outfile=NULL, gp=3,
         close(bts)
       }
     }
-    
+    zzz<-gc()
+    rm(zzz)
     if(plot_res==TRUE && plt==TRUE && bsls==TRUE){
 
       #vectorize#
@@ -435,7 +525,7 @@ div.part<-function(infile,outfile=NULL, gp=3,
                               lwd=1,lty=c(1,2),col=c('black','red'))")
   
       xy.labels_loci[[2]]=data.frame(Locus_name=accDat$locus_names[lso123[[5]]],
-                               Gst_Nei=round(bs_res[[4]][lso123[[4]],1],4),
+                               Gst_Nei=round(bs_res[[4]][lso123[[5]],1],4),
                                Gst_Hedrick=round(bs_res[[5]][lso123[[5]],1],4),
                                D_jost=round(bs_res[[6]][lso123[[5]],1],4))
       
@@ -458,12 +548,39 @@ div.part<-function(infile,outfile=NULL, gp=3,
                               lwd=1,lty=c(1,2),col=c('black','red'))")
   
       xy.labels_loci[[3]]=data.frame(Locus_name=accDat$locus_names[lso123[[6]]],
-                               Gst_Nei=round(bs_res[[4]][lso123[[4]],1],4),
-                               Gst_Hedrick=round(bs_res[[5]][lso123[[5]],1],4),
+                               Gst_Nei=round(bs_res[[4]][lso123[[6]],1],4),
+                               Gst_Hedrick=round(bs_res[[5]][lso123[[6]],1],4),
                                D_jost=round(bs_res[[6]][lso123[[6]],1],4))
       
       y.pos_loci[[3]]=bs_res[[6]][lso123[[6]],1]
       fn_pre_loci[[3]]<-names(bs_res)[6]
+      
+      #plot(Fst)
+      if(fst==TRUE){
+        plot.call_loci[[4]]=c("plot(bs_res[[8]][lso123[[8]],1],
+                          ylim=c(0,(max(bs_res[[8]][,3])+
+                            min(bs_res[[8]][,3]))),xaxt='n',
+                            ylab=names(bs_res)[8],type='n',
+                          xlab='Loci \n (Hover over a point to see locus data)',
+                            cex.lab=1.5,cex.axis=1.3,las=1)")
+        
+        plot.extras_loci[[4]]=c("points(bs_res[[8]][lso123[[8]],1],
+                            pch=15,col='black',cex=1);
+                            arrows(1:accDat$nloci,bs_res[[8]][lso123[[8]],2],
+                            1:accDat$nloci,bs_res[[8]][lso123[[8]],3],code=3,
+                            angle=90,length=0.05,lwd=0.1);
+                            abline(h=c(0,bs_res[[8]][(accDat$nloci+1),2]),
+                            lwd=1,lty=c(1,2),col=c('black','red'))")
+  
+      xy.labels_loci[[4]]=data.frame(Locus_name=accDat$locus_names[lso123[[8]]],
+                                Gst_Nei=round(bs_res[[4]][lso123[[8]],1],4),
+                                Gst_Hedrick=round(bs_res[[5]][lso123[[8]],1],4),
+                                D_jost=round(bs_res[[6]][lso123[[8]],1],4),
+                                Fst_WC=round(bs_res[[8]][lso123[[8]],1],4))
+        
+      y.pos_loci[[4]]=bs_res[[8]][lso123[[8]],1]
+      fn_pre_loci[[4]]<-names(bs_res)[8]
+     }
     }
     ############################################################################
     ################################## Pairwise ################################
@@ -499,10 +616,14 @@ div.part<-function(infile,outfile=NULL, gp=3,
                                                   ncol=accDat$nloci))))
     }
     true_stat_gp_in<-list()
-    pw_glb<-matrix(rep(0,(6*(ncol(pw)))),ncol=6)
+    if(fst==TRUE){
+      pw_glb<-matrix(rep(0,(9*(ncol(pw)))),ncol=9)
+    } else {
+      pw_glb<-matrix(rep(0,(6*(ncol(pw)))),ncol=6)
+    }
     for (i in 1:ncol(pw)){
-      true_stat_gp_in[[i]]<-list(pw_data[[i]],gp,F,F)
-      names(true_stat_gp_in[[i]])<-c("infile","gp","bootstrap","ls")
+      true_stat_gp_in[[i]]<-list(infile=pw_data[[i]],gp=gp,bootstrap="FALSE",
+                                 ls="FALSE",fst=fst)
     }
     if (para == TRUE && para_pack == FALSE) {
       true_stat<-parLapply(cl,true_stat_gp_in, pre.divLowMemory)
@@ -514,34 +635,74 @@ div.part<-function(infile,outfile=NULL, gp=3,
       true_stat<-lapply(true_stat_gp_in, pre.divLowMemory)
     }
     for(i in 1:ncol(pw)){
-      pw_glb[i,]<-c(true_stat[[i]]$gst_all,true_stat[[i]]$gst_all_hedrick,
-                    true_stat[[i]]$djost_all,true_stat[[i]]$gst_est_all,
-                    true_stat[[i]]$gst_est_all_hedrick,
-                    true_stat[[i]]$djost_est_all)
+      if(fst==TRUE){
+        pw_glb[i,]<-c(true_stat[[i]]$gst_all,true_stat[[i]]$gst_all_hedrick,
+                      true_stat[[i]]$djost_all,true_stat[[i]]$gst_est_all,
+                      true_stat[[i]]$gst_est_all_hedrick,
+                      true_stat[[i]]$djost_est_all,
+                      as.numeric(true_stat[[i]]$fstat))
+      } else {
+        pw_glb[i,]<-c(true_stat[[i]]$gst_all,true_stat[[i]]$gst_all_hedrick,
+                      true_stat[[i]]$djost_all,true_stat[[i]]$gst_est_all,
+                      true_stat[[i]]$gst_est_all_hedrick,
+                      true_stat[[i]]$djost_est_all)
+      }
+        
       true_stat[[i]]<-0
     }
-    pwMatList<-lapply(1:6, function(x){
-      matrix(rep("--",((accDat$npops+1)^2)),ncol=(accDat$npops+1),nrow=(accDat$npops+1))
-    })
-    pwMatListOut<-lapply(1:6, function(x){
-      matrix(rep("--",((accDat$npops)^2)),ncol=(accDat$npops),nrow=(accDat$npops))
-    })
+    if(fst==TRUE){
+      pwMatList<-lapply(1:9, function(x){
+        noquote(matrix(rep("--",((accDat$npops+1)^2)),ncol=(accDat$npops+1),
+               nrow=(accDat$npops+1)))
+      })
+    } else {
+      pwMatList<-lapply(1:6, function(x){
+        noquote(matrix(rep("--",((accDat$npops+1)^2)),ncol=(accDat$npops+1),
+               nrow=(accDat$npops+1)))
+      })
+    }
+    if(fst==TRUE){
+      pwMatListOut<-lapply(1:9, function(x){
+        noquote(matrix(rep("--",((accDat$npops)^2)),ncol=(accDat$npops),
+               nrow=(accDat$npops)))
+      })
+    } else {
+      pwMatListOut<-lapply(1:6, function(x){
+        noquote(matrix(rep("--",((accDat$npops)^2)),ncol=(accDat$npops),
+                       nrow=(accDat$npops)))
+      })
+    }
     names(pwMatList)<-namer
     names(pwMatListOut)<-namer
     #write pw res to matrices
     pnames<-c("", accDat$pop_names)
     pnamesOut<-accDat$pop_names
-    for(i in 1:6){
-      for(j in 1:ncol(pw)){
-        pwMatList[[i]][pwmat[2,j],pwmat[1,j]]<-pw_glb[j,i]
-        pwMatList[[i]][pwmat[1,j],pwmat[2,j]]<-""
-        pwMatListOut[[i]][pw[2,j],pw[1,j]]<-pw_glb[j,i]
-        pwMatListOut[[i]][pw[1,j],pw[2,j]]<-""
+    if(fst==TRUE){
+      for(i in 1:9){
+        for(j in 1:ncol(pw)){
+          pwMatList[[i]][pwmat[2,j],pwmat[1,j]]<-pw_glb[j,i]
+          pwMatList[[i]][pwmat[1,j],pwmat[2,j]]<-""
+          pwMatListOut[[i]][pw[2,j],pw[1,j]]<-pw_glb[j,i]
+          pwMatListOut[[i]][pw[1,j],pw[2,j]]<-""
+        }
+        pwMatList[[i]][1,]<-pnames
+        pwMatList[[i]][,1]<-pnames
+        dimnames(pwMatListOut[[i]])<-list(pnamesOut,pnamesOut)
       }
-      pwMatList[[i]][1,]<-pnames
-      pwMatList[[i]][,1]<-pnames
-      dimnames(pwMatListOut[[i]])<-list(pnamesOut,pnamesOut)
+    } else {
+      for(i in 1:6){
+        for(j in 1:ncol(pw)){
+          pwMatList[[i]][pwmat[2,j],pwmat[1,j]]<-pw_glb[j,i]
+          pwMatList[[i]][pwmat[1,j],pwmat[2,j]]<-""
+          pwMatListOut[[i]][pw[2,j],pw[1,j]]<-pw_glb[j,i]
+          pwMatListOut[[i]][pw[1,j],pw[2,j]]<-""
+        }
+        pwMatList[[i]][1,]<-pnames
+        pwMatList[[i]][,1]<-pnames
+        dimnames(pwMatListOut[[i]])<-list(pnamesOut,pnamesOut)
+      }
     }
+      
     
     # write object create
     #pnames list
@@ -549,9 +710,16 @@ div.part<-function(infile,outfile=NULL, gp=3,
     pwWrite<-pwMatList[[1]]
     pwWrite<-rbind(c(names(pwMatList)[1],rep("",accDat$npops)),pwWrite, 
                    rep("",(accDat$npops+1)))
-    for(i in 2:6){
-      pwWrite<-rbind(pwWrite,c(names(pwMatList)[i],rep("",accDat$npops)),
-                     pwMatList[[i]],rep("",(accDat$npops+1)))
+    if(fst==TRUE){
+      for(i in 2:9){
+        pwWrite<-rbind(pwWrite,c(names(pwMatList)[i],rep("",accDat$npops)),
+                       pwMatList[[i]],rep("",(accDat$npops+1)))
+      }
+    } else {
+      for(i in 2:6){
+        pwWrite<-rbind(pwWrite,c(names(pwMatList)[i],rep("",accDat$npops)),
+                       pwMatList[[i]],rep("",(accDat$npops+1)))
+      }
     }
     if(write_res==TRUE){
       # write data to excel
@@ -572,19 +740,29 @@ div.part<-function(infile,outfile=NULL, gp=3,
     #cleanup
     rm("pwWrite")
     ##
-    
+    zzz<-gc()
+    rm(zzz)
     #Bootstrap
     if(bspw==TRUE){
       
       # Bootstrap results data object 
       # bs_pw_glb = bootstrap pairwise global stats
-      bs_pw_glb<-matrix(rep(0,(6*bstrps)),ncol=6,nrow=bstrps)
+      if(fst==TRUE){
+        bs_pw_glb<-matrix(rep(0,(9*bstrps)),ncol=9,nrow=bstrps)
+      } else {
+        bs_pw_glb<-matrix(rep(0,(6*bstrps)),ncol=6,nrow=bstrps)
+      }
       # output results data object
       # pw_res = pairwise results
-      #
-      pw_res<-lapply(1:6, function(x){
-        matrix(nrow=ncol(pw), ncol=3)
-      })
+      if(fst==TRUE){
+        pw_res<-lapply(1:9, function(x){
+          matrix(nrow=ncol(pw), ncol=3)
+        })
+      } else {
+        pw_res<-lapply(1:6, function(x){
+          matrix(nrow=ncol(pw), ncol=3)
+        })
+      }
       #
       #
       
@@ -595,21 +773,35 @@ div.part<-function(infile,outfile=NULL, gp=3,
         data_res<-list()
         bs_pw_para<-list()
         for(i in 1:ncol(pw)){
-          input<-list(pw_data[[i]],gp,T,F)
+          input<-list(infile=pw_data[[i]],gp=gp,bootstrap="TRUE",
+                      ls="FALSE",fst=fst)
           pw_inlist<-list()
           for(j in 1:bstrps){
             pw_inlist[[j]]<-input
-            names(pw_inlist[[j]])<-c("infile","gp","bootstrap","ls")
           }
-          bs_pw_glb[[i]]<-matrix(rep(0,(6*bstrps)),ncol=6,nrow=bstrps)
+          if(fst==TRUE){
+            bs_pw_glb[[i]]<-matrix(rep(0,(9*bstrps)),ncol=9,nrow=bstrps)
+          } else {
+            bs_pw_glb[[i]]<-matrix(rep(0,(6*bstrps)),ncol=6,nrow=bstrps)
+          }
           bs_pw_para<-parLapply(cl,pw_inlist,pre.divLowMemory)
           for(j in 1:bstrps){
-            bs_pw_glb[[i]][j,]<-c(bs_pw_para[[j]]$gst_all,
-                                  bs_pw_para[[j]]$gst_all_hedrick,
-                                  bs_pw_para[[j]]$djost_all,
-                                  bs_pw_para[[j]]$gst_est_all,
-                                  bs_pw_para[[j]]$gst_est_all_hedrick,
-                                  bs_pw_para[[j]]$djost_est_all)
+            if(fst==TRUE){
+              bs_pw_glb[[i]][j,]<-c(bs_pw_para[[j]]$gst_all,
+                                    bs_pw_para[[j]]$gst_all_hedrick,
+                                    bs_pw_para[[j]]$djost_all,
+                                    bs_pw_para[[j]]$gst_est_all,
+                                    bs_pw_para[[j]]$gst_est_all_hedrick,
+                                    bs_pw_para[[j]]$djost_est_all,
+                                    as.numeric(bs_pw_para[[j]]$fstats))
+            } else {
+              bs_pw_glb[[i]][j,]<-c(bs_pw_para[[j]]$gst_all,
+                                    bs_pw_para[[j]]$gst_all_hedrick,
+                                    bs_pw_para[[j]]$djost_all,
+                                    bs_pw_para[[j]]$gst_est_all,
+                                    bs_pw_para[[j]]$gst_est_all_hedrick,
+                                    bs_pw_para[[j]]$djost_est_all)
+            }
           }
         }
         #
@@ -626,11 +818,20 @@ div.part<-function(infile,outfile=NULL, gp=3,
         #stopCluster(cl)
         
         for(i in 1:ncol(pw)){
-          for(j in 1:6){
-            pw_res[[j]][i,1]<-pw_glb[i,j]
-            pw_res[[j]][i,2]<-round((pw_glb[i,j]-cis[[i]][j]),4)
-            pw_res[[j]][i,3]<-round((pw_glb[i,j]+cis[[i]][j]),4)
-            pw_res[[j]][is.na(pw_res[[j]])]<-0
+          if(fst==TRUE){
+            for(j in 1:9){
+              pw_res[[j]][i,1]<-pw_glb[i,j]
+              pw_res[[j]][i,2]<-round((pw_glb[i,j]-cis[[i]][j]),4)
+              pw_res[[j]][i,3]<-round((pw_glb[i,j]+cis[[i]][j]),4)
+              pw_res[[j]][is.na(pw_res[[j]])]<-0
+            }
+          } else {
+            for(j in 1:6){
+              pw_res[[j]][i,1]<-pw_glb[i,j]
+              pw_res[[j]][i,2]<-round((pw_glb[i,j]-cis[[i]][j]),4)
+              pw_res[[j]][i,3]<-round((pw_glb[i,j]+cis[[i]][j]),4)
+              pw_res[[j]][is.na(pw_res[[j]])]<-0
+            }
           }
         }
         stopCluster(cl)
@@ -638,37 +839,55 @@ div.part<-function(infile,outfile=NULL, gp=3,
         #sequential vectorized
         pw_inlist<-list()
         for(i in 1:ncol(pw)){
-          input<-list(pw_data[[i]],gp,T,F)
+          input<-list(infile=pw_data[[i]],gp=gp,bootstrap="TRUE",ls="FALSE",
+                      fst=fst)
           pw_inlist[[i]]<-list()
           for(j in 1:bstrps){
             pw_inlist[[i]][[j]]<-input
-            names(pw_inlist[[i]][[j]])<-c("infile","gp","bootstrap","ls")
           }
         }
         bs_pw_glb<-list()
         for(i in 1:ncol(pw)){
-          bs_pw_glb[[i]]<-matrix(rep(0,(6*bstrps)),ncol=6,nrow=bstrps)
+          if(fst==TRUE){
+            bs_pw_glb[[i]]<-matrix(rep(0,(9*bstrps)),ncol=9,nrow=bstrps)
+          } else {
+            bs_pw_glb[[i]]<-matrix(rep(0,(6*bstrps)),ncol=6,nrow=bstrps)
+          }
         }
         #create a readGenepop list
         bs_pw_glb<-list()
         data_res<-list()
         bs_pw_para<-list()
         for(i in 1:ncol(pw)){
-          input<-list(pw_data[[i]],gp,T,F)
+          input<-list(infile=pw_data[[i]],gp=gp,bootstrap="TRUE",
+                      ls="FALSE",fst=fst)
           pw_inlist<-list()
           for(j in 1:bstrps){
             pw_inlist[[j]]<-input
-            names(pw_inlist[[j]])<-c("infile","gp","bootstrap","ls")
           }
-          bs_pw_glb[[i]]<-matrix(rep(0,(6*bstrps)),ncol=6,nrow=bstrps)
+          if(fst==TRUE){
+            bs_pw_glb[[i]]<-matrix(rep(0,(9*bstrps)),ncol=9,nrow=bstrps)
+          } else {
+            bs_pw_glb[[i]]<-matrix(rep(0,(6*bstrps)),ncol=6,nrow=bstrps)
+          }
           bs_pw_para<-lapply(pw_inlist,pre.divLowMemory)
           for(j in 1:bstrps){
-            bs_pw_glb[[i]][j,]<-c(bs_pw_para[[j]]$gst_all,
-                                  bs_pw_para[[j]]$gst_all_hedrick,
-                                  bs_pw_para[[j]]$djost_all,
-                                  bs_pw_para[[j]]$gst_est_all,
-                                  bs_pw_para[[j]]$gst_est_all_hedrick,
-                                  bs_pw_para[[j]]$djost_est_all)
+            if(fst==TRUE){
+              bs_pw_glb[[i]][j,]<-c(bs_pw_para[[j]]$gst_all,
+                                    bs_pw_para[[j]]$gst_all_hedrick,
+                                    bs_pw_para[[j]]$djost_all,
+                                    bs_pw_para[[j]]$gst_est_all,
+                                    bs_pw_para[[j]]$gst_est_all_hedrick,
+                                    bs_pw_para[[j]]$djost_est_all,
+                                    as.numeric(bs_pw_para[[j]]$fstat))
+            } else {
+              bs_pw_glb[[i]][j,]<-c(bs_pw_para[[j]]$gst_all,
+                                    bs_pw_para[[j]]$gst_all_hedrick,
+                                    bs_pw_para[[j]]$djost_all,
+                                    bs_pw_para[[j]]$gst_est_all,
+                                    bs_pw_para[[j]]$gst_est_all_hedrick,
+                                    bs_pw_para[[j]]$djost_est_all)
+            }
           }
         } 
         # confidence interval calculator function
@@ -682,10 +901,18 @@ div.part<-function(infile,outfile=NULL, gp=3,
         # Calculate confidence interval
         cis<-lapply(bs_pw_glb,ci)
         for(i in 1:ncol(pw)){
-          for(j in 1:6){
-            pw_res[[j]][i,1]<-pw_glb[i,j]
-            pw_res[[j]][i,2]<-round((pw_glb[i,j]-cis[[i]][j]),4)
-            pw_res[[j]][i,3]<-round((pw_glb[i,j]+cis[[i]][j]),4)
+          if(fst==TRUE){
+            for(j in 1:9){
+              pw_res[[j]][i,1]<-pw_glb[i,j]
+              pw_res[[j]][i,2]<-round((pw_glb[i,j]-cis[[i]][j]),4)
+              pw_res[[j]][i,3]<-round((pw_glb[i,j]+cis[[i]][j]),4)
+            }
+          } else {
+            for(j in 1:6){
+              pw_res[[j]][i,1]<-pw_glb[i,j]
+              pw_res[[j]][i,2]<-round((pw_glb[i,j]-cis[[i]][j]),4)
+              pw_res[[j]][i,3]<-round((pw_glb[i,j]+cis[[i]][j]),4)
+            }
           }
         }
         #
@@ -698,20 +925,32 @@ div.part<-function(infile,outfile=NULL, gp=3,
       #
       pw_nms1<-paste(pw[1,],pw[2,],sep=" vs. ")
       #
-      names(pw_res)<-c("Gst","G_hed_st","D_Jost","Gst_est","G_hed_st_est",
-                       "D_Jost_est")
+      names(pw_res)<-namer
       #
       pw_res1<-pw_res
-      for(i in 1:6){
-        dimnames(pw_res1[[i]])<-list(pw_nms,c("Actual","Lower_CI","Upper_CI"))
+      if(fst==TRUE){
+        for(i in 1:9){
+          dimnames(pw_res1[[i]])<-list(pw_nms,c("Actual","Lower_CI","Upper_CI"))
+        }
+      } else {
+        for(i in 1:6){
+          dimnames(pw_res1[[i]])<-list(pw_nms,c("Actual","Lower_CI","Upper_CI"))
+        }
       }
       # bs results output object header
       hdr<-matrix(c("Pairwise","Actual","Lower_95%CI","Upper_95%CI"),ncol=4)
       pw_bs_out<-matrix(rbind(hdr,c(names(pw_res)[1],"","",""),
                               cbind(pw_nms,pw_res[[1]])),ncol=4)
-      for(i in 2:6){
-        pw_bs_out<-matrix(rbind(pw_bs_out,c(names(pw_res)[i],"","",""),
-                                cbind(pw_nms,pw_res[[i]])),ncol=4)
+      if(fst==TRUE){
+        for(i in 2:9){
+          pw_bs_out<-matrix(rbind(pw_bs_out,c(names(pw_res)[i],"","",""),
+                                  cbind(pw_nms,pw_res[[i]])),ncol=4)
+        }
+      } else {
+        for(i in 2:6){
+          pw_bs_out<-matrix(rbind(pw_bs_out,c(names(pw_res)[i],"","",""),
+                                  cbind(pw_nms,pw_res[[i]])),ncol=4)
+        }
       }
       if(write_res==TRUE){
         write.xlsx(pw_bs_out,file=paste(of,"[div.part].xlsx",sep=""),
@@ -727,18 +966,19 @@ div.part<-function(infile,outfile=NULL, gp=3,
         close(pw_bts)
       }  
     }
+    zzz<-gc()
+    rm(zzz)
     ############################################################################
     #pw plotter
     if(plot_res==TRUE && plt==TRUE && bspw==TRUE){
       pwso<-list()
-      for(i in 1:6){
+      for(i in 1:length(bs_res)){
         pwso[[i]]<-order(pw_res[[i]][,1],decreasing=F)
         if(length(pwso[[i]]) >= 100){
           pwso[[i]]<-pwso[[i]][(length(pwso[[i]])-99):length(pwso[[i]])]
         }
       }
-      names(pwso)<-c("Gst","G_hed_st","D_Jost","Gst_est","G_hed_st_est",
-                     "D_Jost_est")
+      names(pwso)<-namer
       # define plot parameters 
       plot.call_pw<-list()
       plot.extras_pw<-list()
@@ -820,6 +1060,32 @@ div.part<-function(infile,outfile=NULL, gp=3,
       
       y.pos_pw[[3]]=pw_res[[6]][pwso[[6]],1]
       fn_pre_pw[[3]]<-names(pw_res)[6]
+      #plot(Fst_WC)
+      if(fst==TRUE){
+        plot.call_pw[[4]]=c("plot(pw_res[[8]][pwso[[8]],1],
+                        ylim=c(0,(max(pw_res[[8]][,3])+
+                          min(pw_res[[8]][,3]))),xaxt='n',ylab=names(pw_res)[8],type='n',
+                        xlab='Pairwise comparisons 
+                        \n (Hover over a point to see pairwise info.)',
+                        cex.lab=1.2,cex.axis=1.3,las=1)")
+
+        plot.extras_pw[[4]]=c("points(pw_res[[8]][pwso[[8]],1],
+                          pch=15,col='black',cex=1);
+                          arrows(1:length(pwso[[8]]),pw_res[[8]][pwso[[8]],2],
+                          1:length(pwso[[8]]),pw_res[[8]][pwso[[8]],3],code=3,
+                          angle=90,length=0.05,lwd=0.1);
+                          abline(h=as.numeric(plot_data321[7]),
+                          lwd=1,lty=2,col='red')")
+    
+        xy.labels_pw[[4]]=data.frame(pairwise_name=pw_nms[pwso[[8]]],
+                                 Gst_Nei=round(pw_res[[4]][pwso[[8]],1],4),
+                                 Gst_Hedrick=round(pw_res[[5]][pwso[[8]],1],4),
+                                 D_jost=round(pw_res[[6]][pwso[[8]],1],4),
+                                 Fst_WC=round(pw_res[[8]][pwso[[8]],1],4))
+        
+        y.pos_pw[[4]]=pw_res[[8]][pwso[[8]],1]
+        fn_pre_pw[[4]]<-names(pw_res)[8]
+      }
     }
   ############################### Bootstrap end ################################
     
@@ -847,7 +1113,9 @@ div.part<-function(infile,outfile=NULL, gp=3,
                y.pos_pw=y.pos_pw,
                fn_pre_pw=fn_pre_pw,
                x.pos_pw=x.pos_pw,
-               pw=pw,plot_data321=plot_data321)
+               pw=pw,
+               plot_data321=plot_data321,
+               fst=fst)
     } else if (plt==TRUE && plot_res==TRUE && bsls==TRUE && bspw==FALSE){
       pl<-list(bs_res=bs_res,
                accDat=accDat,
@@ -861,7 +1129,8 @@ div.part<-function(infile,outfile=NULL, gp=3,
                direct=direct,
                plot_loci="TRUE",
                plot_pw="FALSE",
-               plot_data321=plot_data321)
+               plot_data321=plot_data321,
+               fst=fst)
     } else if (plt==TRUE && plot_res==TRUE && bsls==FALSE && bspw==TRUE){
       pl<-list(pw_res=pw_res,
                accDat=accDat,
@@ -875,12 +1144,15 @@ div.part<-function(infile,outfile=NULL, gp=3,
                direct=direct,
                plot_loci="FALSE",
                plot_pw="TRUE",
-               pw=pw,plot_data321=plot_data321)
+               pw=pw,plot_data321=plot_data321,
+               fst=fst)
     }
     
     if (plt==TRUE && plot_res==TRUE){
       suppressWarnings(plotter(x=pl,img="1000x600"))
     }
+    zzz<-gc()
+    rm(zzz)
     
     
    #############################################################################
@@ -1092,9 +1364,11 @@ readGenepop<- function (x) {
     })
   })
   #assign allele freqs to frequency matrices
+  obs_count<-allele_freq
   for(i in 1:npops){
     for(j in 1:nloci){
       allele_freq[[j]][names(afCalcpop[[i]][[j]]),i]<-afCalcpop[[i]][[j]]
+      obs_count[[j]][names(actab[[i]][[j]]),i]<-actab[[i]][[j]]
     }
   }
   
@@ -1158,7 +1432,8 @@ readGenepop<- function (x) {
          indtyp=indtyp,
          nalleles=nalleles,
          ls=ls,
-         bs_file=bs_data_file)
+         bs_file=bs_data_file,
+         obs_allele_num=obs_count)
   } else if(bootstrap==F){
     list(npops=npops, 
          nloci=nloci, 
@@ -1176,7 +1451,8 @@ readGenepop<- function (x) {
          pop_names=pop_names,
          indtyp=indtyp,
          nalleles=nalleles,
-         ls=ls)
+         ls=ls,
+         obs_allele_num=obs_count)
   }
 }
 ################################################################################
@@ -1440,6 +1716,24 @@ plotter<-function(x,img="1200x600"){
                                dir=jjj$direct,
                                window.size="2100x1000"))
     unlink(paste(jjj$direct,jjj$fn_pre_loci[[3]],"_locus_stat_",fl_ext,sep=""))
+    #Fst_WC_loci
+    if(jjj$fst==TRUE){
+      suppressWarnings(imagesend(plot.call=jjj$plot.call_loci[[4]],
+                                 x.pos=jjj$x.pos_loci,
+                                 y.pos=jjj$y.pos_loci[[4]],
+                                 xy.type="points",
+                                 plot.extras=jjj$plot.extras_loci[[4]],
+                                 mai.mat=NA,
+                                 mai.prc=FALSE,
+                                 xy.labels=jjj$xy.labels_loci[[4]],
+                                 image.size=image.size,
+                                 spot.radius=5,
+                                 fname.root=paste(jjj$fn_pre_loci[[4]],
+                                                  "_locus_stat_",sep=""),
+                                 dir=jjj$direct,
+                                 window.size="2100x1000"))
+     unlink(paste(jjj$direct,jjj$fn_pre_loci[[4]],"_locus_stat_",fl_ext,sep=""))
+    }
     if(exists("jjj", where=".GlobalEnv")==TRUE){
     rm(jjj, pos=".GlobalEnv")
     }
@@ -1514,6 +1808,26 @@ plotter<-function(x,img="1200x600"){
                                dir=jjj$direct,
                                window.size="2100x1000"))
     unlink(paste(jjj$direct,jjj$fn_pre_pw[[3]],"_pairwise_stats_",fl_ext,sep=""))
+    #Fst_WC_pw
+    if(jjj$fst==TRUE){
+      suppressWarnings(imagesend(plot.call=jjj$plot.call_pw[[4]],
+                                 x.pos=jjj$x.pos_pw,
+                                 y.pos=jjj$y.pos_pw[[4]],
+                                 xy.type="points",
+                                 plot.extras=jjj$plot.extras_pw[[4]],
+                                 mai.mat=NA,
+                                 mai.prc=FALSE,
+                                 xy.labels=jjj$xy.labels_pw[[4]],
+                                 image.size=image.size,
+                                 spot.radius=5,
+                                 fname.root=paste(jjj$fn_pre_pw[[4]],
+                                                  "_pairwise_stats_",sep=""),
+                                 dir=jjj$direct,
+                                 window.size="2100x1000"))
+      unlink(paste(jjj$direct,jjj$fn_pre_pw[[4]],"_pairwise_stats_",
+                   fl_ext,sep=""))
+    }
+    
     if(exists("jjj", where=".GlobalEnv")==TRUE){
     rm(jjj, pos=".GlobalEnv")
     }
@@ -1593,6 +1907,24 @@ plotter<-function(x,img="1200x600"){
                                dir=jjj$direct,
                                window.size="2100x1000"))
     unlink(paste(jjj$direct,jjj$fn_pre_loci[[3]],"_locus_stat_",fl_ext,sep=""))
+    #Fst_WC_loci
+    if(jjj$fst==TRUE){
+      suppressWarnings(imagesend(plot.call=jjj$plot.call_loci[[4]],
+                                 x.pos=jjj$x.pos_loci,
+                                 y.pos=jjj$y.pos_loci[[4]],
+                                 xy.type="points",
+                                 plot.extras=jjj$plot.extras_loci[[4]],
+                                 mai.mat=NA,
+                                 mai.prc=FALSE,
+                                 xy.labels=jjj$xy.labels_loci[[4]],
+                                 image.size=image.size,
+                                 spot.radius=5,
+                                 fname.root=paste(jjj$fn_pre_loci[[4]],
+                                                  "_locus_stat_",sep=""),
+                                 dir=jjj$direct,
+                                 window.size="2100x1000"))
+      unlink(paste(jjj$direct,jjj$fn_pre_loci[[4]],"_locus_stat_",fl_ext,sep=""))
+    }
     #Gst_pw
     suppressWarnings(imagesend(plot.call=jjj$plot.call_pw[[1]],
                                x.pos=jjj$x.pos_pw,
@@ -1643,6 +1975,25 @@ plotter<-function(x,img="1200x600"){
                                window.size="2100x1000"))
     unlink(paste(jjj$direct,jjj$fn_pre_pw[[3]],"_pairwise_stats_",
                  fl_ext,sep=""))
+    #Fst_WC_pw
+    if(jjj$fst==TRUE){
+      suppressWarnings(imagesend(plot.call=jjj$plot.call_pw[[4]],
+                                 x.pos=jjj$x.pos_pw,
+                                 y.pos=jjj$y.pos_pw[[4]],
+                                 xy.type="points",
+                                 plot.extras=jjj$plot.extras_pw[[4]],
+                                 mai.mat=NA,
+                                 mai.prc=FALSE,
+                                 xy.labels=jjj$xy.labels_pw[[4]],
+                                 image.size=image.size,
+                                 spot.radius=5,
+                                 fname.root=paste(jjj$fn_pre_pw[[4]],
+                                                  "_pairwise_stats_",sep=""),
+                                 dir=jjj$direct,
+                                 window.size="2100x1000"))
+      unlink(paste(jjj$direct,jjj$fn_pre_pw[[4]],"_pairwise_stats_",
+                   fl_ext,sep=""))
+    }
     if(exists("jjj", where=".GlobalEnv")==TRUE){
     rm(jjj, pos=".GlobalEnv")
     }
@@ -1999,11 +2350,13 @@ in.bs<-function(x){
     
     if (gp==3) {
       plMake<-function(x){
-        return(matrix(sprintf("%06g",as.numeric(x)),nrow=nrow(x),ncol=ncol(x)))
+        return(matrix(suppressWarnings(sprintf("%06g",as.numeric(x))),
+               nrow=nrow(x),ncol=ncol(x)))
       }
     } else if (gp==2) {
       plMake<-function(x){
-        return(matrix(sprintf("%04g",as.numeric(x)),nrow=nrow(x),ncol=ncol(x)))
+        return(matrix(suppressWarnings(sprintf("%04g",as.numeric(x))),
+               nrow=nrow(x),ncol=ncol(x)))
       }
     }
     pop_list<-lapply(pop_list, plMake)
@@ -2448,15 +2801,17 @@ readGenepop.user<- function (infile=NULL, gp=3, bootstrap=FALSE) {
   
   
   
-  if (gp==3) {
-    plMake<-function(x){
-      return(matrix(sprintf("%06g",as.numeric(x)),nrow=nrow(x),ncol=ncol(x)))
+    if (gp==3) {
+      plMake<-function(x){
+        return(matrix(suppressWarnings(sprintf("%06g",as.numeric(x))),
+               nrow=nrow(x),ncol=ncol(x)))
+      }
+    } else if (gp==2) {
+      plMake<-function(x){
+        return(matrix(suppressWarnings(sprintf("%04g",as.numeric(x))),
+               nrow=nrow(x),ncol=ncol(x)))
+      }
     }
-  } else if (gp==2) {
-    plMake<-function(x){
-      return(matrix(sprintf("%04g",as.numeric(x)),nrow=nrow(x),ncol=ncol(x)))
-    }
-  }
   pop_list<-lapply(pop_list, plMake)
   
   
@@ -2579,9 +2934,11 @@ readGenepop.user<- function (infile=NULL, gp=3, bootstrap=FALSE) {
     })
   })
   #assign allele freqs to frequency matrices
+  obs_count<-allele_freq
   for(i in 1:npops){
     for(j in 1:nloci){
       allele_freq[[j]][names(afCalcpop[[i]][[j]]),i]<-afCalcpop[[i]][[j]]
+      obs_count[[j]][names(actab[[i]][[j]]),i]<-actab[[i]][[j]]
     }
   }
   
@@ -2645,7 +3002,8 @@ readGenepop.user<- function (infile=NULL, gp=3, bootstrap=FALSE) {
          indtyp=indtyp,
          nalleles=nalleles,
          ls=ls,
-         bs_file=bs_data_file)
+         bs_file=bs_data_file,
+         obs_allele_num=obs_count)
   } else if(bootstrap==F){
     list(npops=npops, 
          nloci=nloci, 
@@ -2663,7 +3021,8 @@ readGenepop.user<- function (infile=NULL, gp=3, bootstrap=FALSE) {
          pop_names=pop_names,
          indtyp=indtyp,
          nalleles=nalleles,
-         ls=ls)
+         ls=ls,
+         obs_allele_num=obs_count)
   }
 }
 ################################################################################
@@ -2689,6 +3048,7 @@ pre.divLowMemory<-function(y){
     infile=x$infile
     bootstrap=x$bootstrap
     ls=x$ls
+    fst=x$fst
     if(typeof(infile)=="list"){
       data1=infile 
     } else if (typeof(infile)=="character"){
@@ -2724,11 +3084,13 @@ pre.divLowMemory<-function(y){
     
     if (gp==3) {
       plMake<-function(x){
-        return(matrix(sprintf("%06g",as.numeric(x)),nrow=nrow(x),ncol=ncol(x)))
+        return(matrix(suppressWarnings(sprintf("%06g",as.numeric(x))),
+               nrow=nrow(x),ncol=ncol(x)))
       }
     } else if (gp==2) {
       plMake<-function(x){
-        return(matrix(sprintf("%04g",as.numeric(x)),nrow=nrow(x),ncol=ncol(x)))
+        return(matrix(suppressWarnings(sprintf("%04g",as.numeric(x))),
+               nrow=nrow(x),ncol=ncol(x)))
       }
     }
     pop_list<-lapply(pop_list, plMake)
@@ -2853,9 +3215,11 @@ pre.divLowMemory<-function(y){
       })
     })
     #assign allele freqs to frequency matrices
+    obs_count<-allele_freq
     for(i in 1:npops){
       for(j in 1:nloci){
         allele_freq[[j]][names(afCalcpop[[i]][[j]]),i]<-afCalcpop[[i]][[j]]
+        obs_count[[j]][names(actab[[i]][[j]]),i]<-actab[[i]][[j]]
       }
     }
     
@@ -2919,7 +3283,10 @@ pre.divLowMemory<-function(y){
            indtyp=indtyp,
            nalleles=nalleles,
            ls=ls,
-           bs_file=bs_data_file)
+           #bs_file=bs_data_file,
+           obs_allele_num=obs_count,
+           fst=fst,
+           gp=gp)
     } else if(bootstrap==F){
       list(npops=npops, 
            nloci=nloci, 
@@ -2937,12 +3304,122 @@ pre.divLowMemory<-function(y){
            pop_names=pop_names,
            indtyp=indtyp,
            nalleles=nalleles,
-           ls=ls)
+           ls=ls,
+           obs_allele_num=obs_count,
+           fst=fst,
+           gp=gp)
     }
   }
   x<-readGenepopX(y)
   data1<-x #x is a readGenepop out object
   ls<-x$ls
+  fst=x$fst
+  ##############################################################################
+  #fstWC define
+  if(fst==TRUE){
+    fstWC<-function(x){
+      all_genot<-x$pop_list[[1]]
+      for(i in 2:x$npops){
+        all_genot<-rbind(all_genot,x$pop_list[[i]])
+      }
+      genot<-apply(all_genot,2,unique)
+      genot<-lapply(genot, function(x){
+        if(sum(is.na(x))>0){
+          y<-which(is.na(x)==TRUE)
+          x_new<-x[-y]
+          return(x_new)
+        } else {
+          return(x)
+        }
+      })
+      #count genotypes
+      genoCount<-list()
+      for(i in 1:ncol(all_genot)){
+        genoCount[[i]]<-matrix(0,ncol=length(genot[[i]]))
+        for(j in 1:length(genot[[i]])){
+          genoCount[[i]][,j]<-length(which(all_genot[,i]==genot[[i]][j]))
+        }
+        if (x$gp==3){
+          colnames(genoCount[[i]])<-paste(substr(genot[[i]],1,3),"/",
+                                          substr(genot[[i]],4,6),sep="")
+        } else if (x$gp==2){
+          colnames(genoCount[[i]])<-paste(substr(genot[[i]],1,2),"/",
+                                          substr(genot[[i]],3,4),sep="")
+        }
+      }
+      h_sum<-list()
+      for(i in 1:x$nloci){
+        h_sum[[i]]<-vector()
+        cnSplit<-strsplit(colnames(genoCount[[i]]),"/")
+        for(j in 1:length(x$all_alleles[[i]])){
+          het_id1<-lapply(cnSplit, is.element, x$all_alleles[[i]][j])
+          het_id2<-lapply(het_id1, sum)
+          het_id2<-as.vector(het_id2)
+          het_id3<-which(het_id2==1)
+          h_sum[[i]][j]<-sum(genoCount[[i]][1,het_id3])
+        }
+      }
+      indtyp_tot<-lapply(x$indtyp, sum)
+      kk_hsum<-list()
+      for(i in 1:x$nloci){
+        kk_hsum[[i]]<-list(h_sum[[i]],indtyp_tot[[i]])
+      }
+      kk_hbar<-lapply(kk_hsum, function(x){
+        return(x[[1]]/x[[2]])
+      })
+      pdat<-list()
+      for(i in 1:x$nloci){
+        pdat[[i]]<-list(x$allele_freq[[i]],x$indtyp[[i]])
+      }
+      kk_p<-lapply(pdat, function(x){
+        apply(x[[1]], 1, function(y){
+          y*(2*x[[2]])
+        })
+      })
+      res<-matrix(0,(x$nloci+1),3)
+      colnames(res)<-c("Fis_WC","Fst_WC","Fit_WC")
+      rownames(res)<-c(x$loci_names, "All")
+      A<-vector()
+      a<-vector()
+      b<-vector()
+      c<-vector()
+      for(i in 1:x$nloci){
+        kknbar<-indtyp_tot[[i]]/x$npops
+        kknC<-(indtyp_tot[[i]]-sum(x$indtyp[[i]]^2)/indtyp_tot[[i]])/(x$npops-1)
+        kkptild<-kk_p[[i]]/(2*x$indtyp[[i]])
+        kkptild[kkptild=="NaN"]<-NA
+        kkpbar<-colSums(kk_p[[i]])/(2*indtyp_tot[[i]])
+        kks2<-colSums(x$indtyp[[i]]*(kkptild-rep(kkpbar,each = x$npops))^2)/
+          ((x$npops-1)*kknbar)
+        kkA<-kkpbar*(1-kkpbar)-(x$npops-1)*kks2/x$npops
+        kka<-kknbar*(kks2-(kkA-(kk_hbar[[i]]/4))/(kknbar-1))/kknC
+        kkb<-kknbar*(kkA-(2*(kknbar-1))*kk_hbar[[i]]/(4*kknbar))/(kknbar-1)
+        kkc<-kk_hbar[[i]]/2
+        A[i]<-sum(kkA)
+        a[i]<-sum(kka)
+        b[i]<-sum(kkb)
+        c[i]<-sum(kkc)
+        res[i,"Fis_WC"]<- round(1-sum(kkc)/sum(kkb+kkc),4)
+        res[i,"Fst_WC"]<- round(sum(kka)/sum(kka+kkb+kkc),4)
+        res[i,"Fit_WC"]<- round(1-sum(kkc)/sum(kka+kkb+kkc),4)
+      }
+      res[res=="NaN"]<-0
+      sumA<-sum(na.omit(A))
+      suma<-sum(na.omit(a))
+      sumb<-sum(na.omit(b))
+      sumc<-sum(na.omit(c))
+      res[(x$nloci+1),"Fis_WC"]<-round(1-sumc/(sumb+sumc),4)
+      res[(x$nloci+1),"Fst_WC"]<-round(suma/(suma+sumb+sumc),4)
+      res[(x$nloci+1),"Fit_WC"]<-round(1-sumc/(suma+sumb+sumc),4)
+      list(Fstats=res,
+           multiLoc<-res[(x$nloci+1),])
+    }
+    if(x$ls==TRUE){
+      fstats<-fstWC(x)[[1]]
+    }else if (x$ls==FALSE){
+      fstats<-fstWC(x)[[2]]
+    }        
+  }
   ##############################################################################
   # create 'easy use' objects from data1 (readGenepop output)
   # pl = pop_list
@@ -3046,61 +3523,122 @@ pre.divLowMemory<-function(y){
   djost_est_all<-round(1/((1/mean(na.omit(djost_est))+(var(na.omit(djost_est))*
     ((1/mean(na.omit(djost_est)))^3)))),4)
   ##############################################################################
-  if(ls==T){  
-    list(hs=hs,
-         hst=hst,
-         dst=dst,
-         gst=gst,
-         djost=djost,
-         hs_est=hs_est,
-         ht_est=ht_est,
-         hst_est=hst_est,
-         dst_est=dst_est,
-         gst_est=gst_est,
-         djost_est=djost_est,
-         gst_max=gst_max,
-         gst_est_max=gst_est_max,
-         gst_hedrick=gst_hedrick,
-         gst_est_hedrick=gst_est_hedrick,
-         ht_mean=ht_mean,
-         hs_mean=hs_mean,
-         gst_all=gst_all,
-         gst_all_max=gst_all_max,
-         gst_all_hedrick=gst_all_hedrick,
-         djost_all=djost_all,
-         hs_est_mean=hs_est_mean,
-         ht_est_mean=ht_est_mean,
-         gst_est_all=gst_est_all,
-         gst_est_all_max=gst_est_all_max,
-         pop_sizes=ps,
-         gst_est_all_hedrick=gst_est_all_hedrick,
-         djost_est_all=djost_est_all,
-         locus_names=ln,
-         locus_harmonic_N=lnharm,
-         npops=np,
-         nloci=nl,
-         pop_list=pl,
-         pop_names=pn)
-  } else {
-    list(ht_mean=ht_mean,
-         hs_mean=hs_mean,
-         gst_all=gst_all,
-         gst_all_max=gst_all_max,
-         gst_all_hedrick=gst_all_hedrick,
-         djost_all=djost_all,
-         hs_est_mean=hs_est_mean,
-         ht_est_mean=ht_est_mean,
-         gst_est_all=gst_est_all,
-         gst_est_all_max=gst_est_all_max,
-         pop_sizes=ps,
-         gst_est_all_hedrick=gst_est_all_hedrick,
-         djost_est_all=djost_est_all,
-         locus_names=ln,
-         locus_harmonic_N=lnharm,
-         npops=np,
-         nloci=nl,
-         pop_list=pl,
-         pop_names=pn)
+  if(fst==TRUE){
+    if(ls==T){  
+      list(hs=hs,
+           hst=hst,
+           dst=dst,
+           gst=gst,
+           djost=djost,
+           hs_est=hs_est,
+           ht_est=ht_est,
+           hst_est=hst_est,
+           dst_est=dst_est,
+           gst_est=gst_est,
+           djost_est=djost_est,
+           gst_max=gst_max,
+           gst_est_max=gst_est_max,
+           gst_hedrick=gst_hedrick,
+           gst_est_hedrick=gst_est_hedrick,
+           ht_mean=ht_mean,
+           hs_mean=hs_mean,
+           gst_all=gst_all,
+           gst_all_max=gst_all_max,
+           gst_all_hedrick=gst_all_hedrick,
+           djost_all=djost_all,
+           hs_est_mean=hs_est_mean,
+           ht_est_mean=ht_est_mean,
+           gst_est_all=gst_est_all,
+           gst_est_all_max=gst_est_all_max,
+           pop_sizes=ps,
+           gst_est_all_hedrick=gst_est_all_hedrick,
+           djost_est_all=djost_est_all,
+           locus_names=ln,
+           locus_harmonic_N=lnharm,
+           npops=np,
+           nloci=nl,
+           pop_list=pl,
+           pop_names=pn,
+           fstats=fstats)
+    } else {
+      list(ht_mean=ht_mean,
+           hs_mean=hs_mean,
+           gst_all=gst_all,
+           gst_all_max=gst_all_max,
+           gst_all_hedrick=gst_all_hedrick,
+           djost_all=djost_all,
+           hs_est_mean=hs_est_mean,
+           ht_est_mean=ht_est_mean,
+           gst_est_all=gst_est_all,
+           gst_est_all_max=gst_est_all_max,
+           pop_sizes=ps,
+           gst_est_all_hedrick=gst_est_all_hedrick,
+           djost_est_all=djost_est_all,
+           locus_names=ln,
+           locus_harmonic_N=lnharm,
+           npops=np,
+           nloci=nl,
+           pop_list=pl,
+           pop_names=pn,
+           fstats=fstats)
+    }
+  } else if(fst==FALSE){
+    if(ls==T){  
+      list(hs=hs,
+           hst=hst,
+           dst=dst,
+           gst=gst,
+           djost=djost,
+           hs_est=hs_est,
+           ht_est=ht_est,
+           hst_est=hst_est,
+           dst_est=dst_est,
+           gst_est=gst_est,
+           djost_est=djost_est,
+           gst_max=gst_max,
+           gst_est_max=gst_est_max,
+           gst_hedrick=gst_hedrick,
+           gst_est_hedrick=gst_est_hedrick,
+           ht_mean=ht_mean,
+           hs_mean=hs_mean,
+           gst_all=gst_all,
+           gst_all_max=gst_all_max,
+           gst_all_hedrick=gst_all_hedrick,
+           djost_all=djost_all,
+           hs_est_mean=hs_est_mean,
+           ht_est_mean=ht_est_mean,
+           gst_est_all=gst_est_all,
+           gst_est_all_max=gst_est_all_max,
+           pop_sizes=ps,
+           gst_est_all_hedrick=gst_est_all_hedrick,
+           djost_est_all=djost_est_all,
+           locus_names=ln,
+           locus_harmonic_N=lnharm,
+           npops=np,
+           nloci=nl,
+           pop_list=pl,
+           pop_names=pn)
+    } else {
+      list(ht_mean=ht_mean,
+           hs_mean=hs_mean,
+           gst_all=gst_all,
+           gst_all_max=gst_all_max,
+           gst_all_hedrick=gst_all_hedrick,
+           djost_all=djost_all,
+           hs_est_mean=hs_est_mean,
+           ht_est_mean=ht_est_mean,
+           gst_est_all=gst_est_all,
+           gst_est_all_max=gst_est_all_max,
+           pop_sizes=ps,
+           gst_est_all_hedrick=gst_est_all_hedrick,
+           djost_est_all=djost_est_all,
+           locus_names=ln,
+           locus_harmonic_N=lnharm,
+           npops=np,
+           nloci=nl,
+           pop_list=pl,
+           pop_names=pn)
+    }
   }
 }
 ################################################################################
