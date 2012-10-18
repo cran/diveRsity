@@ -1,3 +1,5 @@
 export (div.part, 
 	in.calc,
-	readGenepop.user)
+	readGenepop.user,
+	corPlot,
+	difPlot)

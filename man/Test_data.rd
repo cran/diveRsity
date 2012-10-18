@@ -3,7 +3,7 @@
 \alias{Test_data}
 \title{Example infile for diveRsity package}
 \description{
-   Test_data is a typical genepop (Rousset, 2008) three digit format input file for the package diveRsity.
+   Test_data is a typical genepop (Rousset, 2008) three digit format input file for the package diveRsity. This is emperical data.
 }
 \usage{Test_data}
 \format{genepop 3 digit.}

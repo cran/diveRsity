@@ -1,6 +1,6 @@
 ################################################################################
 ################################################################################
-##                              diveRsity v1.2.3                              ##  
+##                              diveRsity v1.3.2                              ##  
 ##                            by Kevin Keenan QUB                             ##  
 ##            An R package for the calculation of differentiation             ##
 ##              statistics and locus informativeness statistics               ##  
@@ -23,7 +23,7 @@ div.part<-function(infile, outfile = NULL, gp = 3, WC_Fst = FALSE,
   bspw<-bs_pairwise
   plt<-Plot
   para<-parallel
-   
+  
   ##############################################################################
   if(bsls==T && bstrps<2){
     bs_warning<-{paste("[STOPPED]",
@@ -37,54 +37,62 @@ div.part<-function(infile, outfile = NULL, gp = 3, WC_Fst = FALSE,
     cat(noquote(bs_warning))
   } else {
     #Use pre.div to calculate the standard global and locus stats
-    pre_data_in<-list(infile=D,gp=gp,bootstrap="FALSE",ls="TRUE",fst=fst)
+    pre_data_in<-list(infile=D,gp=gp,bootstrap="FALSE",locs="TRUE",fst=fst)
     accDat<-pre.divLowMemory(pre_data_in)
     # create a directory for output
-    suppressWarnings(dir.create(path=paste(getwd(),"/",on,
-                                           "-[diveRsity]","/",sep="")))
+    if(!is.null(on)){
+      suppressWarnings(dir.create(path=paste(getwd(),"/",on,
+                                             "-[diveRsity]","/",sep="")))
+    }
     of=paste(getwd(),"/",on,"-[diveRsity]","/",sep="")
     wd<-getwd()
     write_res<-is.element("xlsx",installed.packages()[,1])
     plot_res<-is.element("sendplot",installed.packages()[,1])
     if(Sys.info()["sysname"][[1]]=="Linux"){
-        para_pack_inst<-is.element(c("snow","doSNOW","foreach","iterators"),
-                               installed.packages()[,1]) 
+      para_pack_inst<-is.element(c("snow","doSNOW","foreach","iterators"),
+                                 installed.packages()[,1]) 
     } else {    
-    para_pack_inst<-is.element(c("parallel","doParallel","foreach","iterators"),
-                               installed.packages()[,1])
+      para_pack_inst<-is.element(c("parallel","doParallel","foreach","iterators"),
+                                 installed.packages()[,1])
     }
-                              
-             
+    
+    if(plt == TRUE && is.null(on)){
+      writeWarn <- paste("", "[NOTE]",
+                         "Your results can't be plotted as you have not",
+                         "provided an argument for 'outfile'.",
+                         "Analysis completed", sep="\n")
+      cat(noquote(writeWarn))
+    }
     para_pack<-any(para_pack_inst==FALSE)
     if(write_res==F){
       Warning1<-{paste(" "," ",
-                  "[NOTE]",
-                  "___________________________________________________________",
-                  "Please install the package 'xlsx' if you would like your", 
-                  "results written to an Excel workbook.",
-                  "Alternatively, your result will automatically be written",
-                  "to .txt files.",
-                  "___________________________________________________________",
-                  "To install 'xlsx' use:",
-                  "> install.packages('xlsx', dependencies=TRUE)",
-                  "See:",
-                  "> ?install.packages - for usage details.",
-                  "___________________________________________________________",
-                  sep="\n")
+                       "[NOTE]",
+                       "___________________________________________________________",
+                       "Please install the package 'xlsx' if you would like your", 
+                       "results written to an Excel workbook.",
+                       "Alternatively, your result will automatically be written",
+                       "to .txt files.",
+                       "___________________________________________________________",
+                       "To install 'xlsx' use:",
+                       "> install.packages('xlsx', dependencies=TRUE)",
+                       "See:",
+                       "> ?install.packages - for usage details.",
+                       "___________________________________________________________",
+                       sep="\n")
       }
       cat(noquote(Warning1))
     } 
     if(plot_res==F && plt==T){
       Warning2<-{paste(" "," "," ",
-                  "[NOTE]  ",
-                  "___________________________________________________________",
-                  "Please install the package 'sendplot' to plot your results.",
-                  "Use:",
-                  "> install.packages('sendplot', dependencies = TRUE)",
-                  "See:",
-                  "> ?install.packages - for usage details",
-                  "___________________________________________________________",
-                  sep="\n")
+                       "[NOTE]  ",
+                       "___________________________________________________________",
+                       "Please install the package 'sendplot' to plot your results.",
+                       "Use:",
+                       "> install.packages('sendplot', dependencies = TRUE)",
+                       "See:",
+                       "> ?install.packages - for usage details",
+                       "___________________________________________________________",
+                       sep="\n")
       }
       cat(noquote(Warning2))
     }
@@ -95,7 +103,7 @@ div.part<-function(infile, outfile = NULL, gp = 3, WC_Fst = FALSE,
       namer<-c("Gst","G_hed_st","D_Jost","Gst_est","G_hed_st_est",
                "D_Jost_est")
     }
-      
+    
     ############################################################################
     # output file
     # multilocus stats vector
@@ -133,68 +141,80 @@ div.part<-function(infile, outfile = NULL, gp = 3, WC_Fst = FALSE,
       plot_data321<-c("Overall","","","",accDat$gst_est_all,
                       accDat$gst_est_all_hedrick,
                       accDat$djost_est_all)
-    } 
-    if(write_res==TRUE){
-      # write data to excel
-      # Load dependencies
-      require("xlsx")
-      # standard stats
-      write.xlsx(ot1,file=paste(of,"[div.part].xlsx",sep=""),
-                 sheetName="Standard_stats",col.names=T,
-                 row.names=F,append=F)
-      # Estimated stats
-      write.xlsx(ot2,file=paste(of,"[div.part].xlsx",sep=""),
-                 sheetName="Estimated_stats",col.names=T,
-                 row.names=F,append=T)
-    } else {
-      # text file alternatives
-      std<-file(paste(of,"Standard-stats[div.part].txt",sep=""), "w")
-      cat(paste(colnames(ot1),sep=""),"\n",sep="\t",file=std)
-      for(i in 1:nrow(ot1)){
-        cat(ot1[i,],"\n",file=std,sep="\t")
-      }
-      close(std)
-      est<-file(paste(of,"Estimated-stats[div.part].txt",sep=""),"w")
-      cat(paste(colnames(ot2),sep=""),"\n",sep="\t",file=est)
-      for(i in 1:nrow(ot2)){
-        cat(ot2[i,],"\n",file=est,sep="\t")
-      }
-      close(est)
     }
+    if (!is.null(on)){
+      if(write_res==TRUE){
+        # write data to excel
+        # Load dependencies
+        require("xlsx")
+        # standard stats
+        write.xlsx(ot1,file=paste(of,"[div.part].xlsx",sep=""),
+                   sheetName="Standard_stats",col.names=T,
+                   row.names=F,append=F)
+        # Estimated stats
+        write.xlsx(ot2,file=paste(of,"[div.part].xlsx",sep=""),
+                   sheetName="Estimated_stats",col.names=T,
+                   row.names=F,append=T)
+      } else {
+        # text file alternatives
+        std<-file(paste(of,"Standard-stats[div.part].txt",sep=""), "w")
+        cat(paste(colnames(ot1),sep=""),"\n",sep="\t",file=std)
+        for(i in 1:nrow(ot1)){
+          cat(ot1[i,],"\n",file=std,sep="\t")
+        }
+        close(std)
+        est<-file(paste(of,"Estimated-stats[div.part].txt",sep=""),"w")
+        cat(paste(colnames(ot2),sep=""),"\n",sep="\t",file=est)
+        for(i in 1:nrow(ot2)){
+          cat(ot2[i,],"\n",file=est,sep="\t")
+        }
+        close(est)
+      }
+    }
+    ot1out<-ot1[,-1]
+    ot2out<-ot2[,-1]
+    
+    ot1out<-matrix(as.numeric(ot1[,2:6]),ncol=5)
+    rownames(ot1out)<-ot1[,1]
+    colnames(ot1out)<-colnames(ot1)[-1]
+    
+    ot2out<-matrix(as.numeric(ot2[,-1]),ncol=(ncol(ot2)-1))
+    rownames(ot2out)<-ot2[,1]
+    colnames(ot2out)<-colnames(ot2)[-1]
     if (para == TRUE && para_pack == TRUE){
       if(Sys.info()["sysname"][[1]]=="Linux"){
-         Warning3<-{paste(" "," ",
-                  "[NOTE]",
-                  "___________________________________________________________",
-                  "Please make sure the packages 'doSNOW', 'snow', 'foreach'",
-                  " and 'iterators' are installed. These are required to run",
-                  " your analysis in parallel.",
-                  "Your analysis will be run sequentially!",
-                  "___________________________________________________________",
-                  "To install these use:",
-                  "> install.packages()",
-                  "See:",
-                  "> ?install.packages - for usage details.",
-                  "___________________________________________________________",
-                  sep="\n")
+        Warning3<-{paste(" "," ",
+                         "[NOTE]",
+                         "___________________________________________________________",
+                         "Please make sure the packages 'doSNOW', 'snow', 'foreach'",
+                         " and 'iterators' are installed. These are required to run",
+                         " your analysis in parallel.",
+                         "Your analysis will be run sequentially!",
+                         "___________________________________________________________",
+                         "To install these use:",
+                         "> install.packages()",
+                         "See:",
+                         "> ?install.packages - for usage details.",
+                         "___________________________________________________________",
+                         sep="\n")
+        }
+      } else {
+        Warning3<-{paste(" "," ",
+                         "[NOTE]",
+                         "___________________________________________________________",
+                         "Please make sure the packages 'parallel', 'doParallel',",
+                         "'foreach' and 'iterators' are installed. These are required",
+                         " to run your analysis in parallel.",
+                         "Your analysis will be run sequentially!",
+                         "___________________________________________________________",
+                         "To install these use:",
+                         "> install.packages()",
+                         "See:",
+                         "> ?install.packages - for usage details.",
+                         "___________________________________________________________",
+                         sep="\n")
+        }
       }
-     } else {
-      Warning3<-{paste(" "," ",
-                  "[NOTE]",
-                  "___________________________________________________________",
-                  "Please make sure the packages 'parallel', 'doParallel',",
-                  "'foreach' and 'iterators' are installed. These are required",
-                  " to run your analysis in parallel.",
-                  "Your analysis will be run sequentially!",
-                  "___________________________________________________________",
-                  "To install these use:",
-                  "> install.packages()",
-                  "See:",
-                  "> ?install.packages - for usage details.",
-                  "___________________________________________________________",
-                  sep="\n")
-      }
-     }
       cat(noquote(Warning3))
     }
     
@@ -204,26 +224,26 @@ div.part<-function(infile, outfile = NULL, gp = 3, WC_Fst = FALSE,
     if (para == TRUE && para_pack == FALSE) {
       #count cores
       if(any((.packages())=="snow") && any((.packages())=="doSNOW")){
-      detach(package:doSNOW)
-      detach(package:snow)
-      library(parallel)
-      cores<-detectCores(logical=TRUE)
-      if(any((.packages())=="doParallel")){
-      detach(package:doParallel)
-      detach(package:parallel)
+        detach(package:doSNOW)
+        detach(package:snow)
+        library(parallel)
+        cores<-detectCores(logical=TRUE)
+        if(any((.packages())=="doParallel")){
+          detach(package:doParallel)
+          detach(package:parallel)
+        } else {
+          detach(package:parallel)
+        }
+        library(doSNOW)
+        library(snow)
       } else {
-      detach(package:parallel)
-      }
-      library(doSNOW)
-      library(snow)
-      } else {
-            library(parallel)
-            cores<-detectCores(logical=TRUE)
-                  if(any((.packages())=="doParallel")){
-      detach(package:doParallel)
-      detach(package:parallel)
-      } else {
-      detach(package:parallel)
+        library(parallel)
+        cores<-detectCores(logical=TRUE)
+        if(any((.packages())=="doParallel")){
+          detach(package:doParallel)
+          detach(package:parallel)
+        } else {
+          detach(package:parallel)
         }
       }
       if(Sys.info()["sysname"][[1]]=="Linux"){
@@ -247,14 +267,14 @@ div.part<-function(infile, outfile = NULL, gp = 3, WC_Fst = FALSE,
     if(bsls==T){
       
       if (para == TRUE && para_pack == FALSE) {
-
+        
         #vectorize prallele#
-        gp_inls<-list(infile=D,gp=gp,bootstrap="TRUE",ls="TRUE",fst=fst)
+        gp_inls<-list(infile=D,gp=gp,bootstrap="TRUE",locs="TRUE",fst=fst)
         gp_in<-list()
         for(i in 1:bstrps){
           gp_in[[i]]<-gp_inls
         }
-
+        
         # calculate stats from readGenepop objects
         bs_loc<-parLapply(cl,gp_in, pre.divLowMemory)
         rm(gp_in)                          ###
@@ -272,21 +292,21 @@ div.part<-function(infile, outfile = NULL, gp = 3, WC_Fst = FALSE,
               as.numeric(bs_loc[[x]]$fstats[(accDat$nloci+1),1:3]))
           }))
         }else{
-        bs_glb<-do.call("rbind",lapply(1:bstrps, function(x){
-          c(round(bs_loc[[x]]$gst_all,4),
-            round(bs_loc[[x]]$gst_all_hedrick,4),
-            round(bs_loc[[x]]$djost_all,4),
-            round(bs_loc[[x]]$gst_est_all,4),
-            round(bs_loc[[x]]$gst_est_all_hedrick,4),
-            round(bs_loc[[x]]$djost_est_all,4))
-        }))
+          bs_glb<-do.call("rbind",lapply(1:bstrps, function(x){
+            c(round(bs_loc[[x]]$gst_all,4),
+              round(bs_loc[[x]]$gst_all_hedrick,4),
+              round(bs_loc[[x]]$djost_all,4),
+              round(bs_loc[[x]]$gst_est_all,4),
+              round(bs_loc[[x]]$gst_est_all_hedrick,4),
+              round(bs_loc[[x]]$djost_est_all,4))
+          }))
         }
-       bs_std<-lapply(1:accDat$nloci, function(x){
-         do.call("rbind",lapply(1:length(bs_loc), function(y){
-           c(round(bs_loc[[y]]$gst[x],4),
-             round(bs_loc[[y]]$gst_hedrick[x],4),
-             round(bs_loc[[y]]$djost[x],4))}))
-       })
+        bs_std<-lapply(1:accDat$nloci, function(x){
+          do.call("rbind",lapply(1:length(bs_loc), function(y){
+            c(round(bs_loc[[y]]$gst[x],4),
+              round(bs_loc[[y]]$gst_hedrick[x],4),
+              round(bs_loc[[y]]$djost[x],4))}))
+        })
         if(fst==TRUE){
           bs_est<-lapply(1:accDat$nloci, function(x){
             do.call("rbind",lapply(1:length(bs_loc), function(y){
@@ -308,11 +328,11 @@ div.part<-function(infile, outfile = NULL, gp = 3, WC_Fst = FALSE,
         rm(bs_loc)                  ###
         z<-gc(reset=T)                ### tidy up
         rm(z)                       ###
-          
+        
       } else {
         #vectorize non-parallel#
-
-        gp_inls<-list(infile=D,gp=gp,bootstrap="TRUE",ls="TRUE",fst=fst)
+        
+        gp_inls<-list(infile=D,gp=gp,bootstrap="TRUE",locs="TRUE",fst=fst)
         gp_in<-list()
         for(i in 1:bstrps){
           gp_in[[i]]<-gp_inls
@@ -369,16 +389,16 @@ div.part<-function(infile, outfile = NULL, gp = 3, WC_Fst = FALSE,
         rm(bs_loc)
         z<-gc(reset=T)
         rm(z)
-
+        
       }
       
-
-    #vectorize#
-    if(fst==TRUE){
-      bs_res<-lapply(1:9,function(x){matrix(ncol=3, nrow=(accDat$nloci+1))})
-    } else {
-      bs_res<-lapply(1:6,function(x){matrix(ncol=3, nrow=(accDat$nloci+1))})
-    }
+      
+      #vectorize#
+      if(fst==TRUE){
+        bs_res<-lapply(1:9,function(x){matrix(ncol=3, nrow=(accDat$nloci+1))})
+      } else {
+        bs_res<-lapply(1:6,function(x){matrix(ncol=3, nrow=(accDat$nloci+1))})
+      }
       bs_join<-cbind(bs_std, bs_est)
       ciCalc<-function(x){
         res<-lapply(x, function(y){
@@ -425,9 +445,16 @@ div.part<-function(infile, outfile = NULL, gp = 3, WC_Fst = FALSE,
       names(bs_res)<-namer
       
       bs_res1<-bs_res
-      for(i in 1:6){
-        dimnames(bs_res1[[i]])<-list(c(accDat$locus_names,"global"),
-                                     c("Actual","Lower_CI","Upper_CI"))
+      if(fst==FALSE){
+        for(i in 1:6){
+          dimnames(bs_res1[[i]])<-list(c(accDat$locus_names,"global"),
+                                       c("Actual","Lower_CI","Upper_CI"))
+        }
+      } else if (fst==TRUE){
+        for(i in 1:9){
+          dimnames(bs_res1[[i]])<-list(c(accDat$locus_names,"global"),
+                                       c("Actual","Lower_CI","Upper_CI"))
+        }
       }
       # bs results output object header
       hdr<-matrix(c("locus","Actual","Lower_95%CI","Upper_95%CI"),ncol=4)
@@ -447,24 +474,26 @@ div.part<-function(infile, outfile = NULL, gp = 3, WC_Fst = FALSE,
                                      bs_res[[i]])),ncol=4)
         }
       }
-      if(write_res==TRUE){
-        write.xlsx(bs_out,file=paste(of,"[div.part].xlsx",sep=""),
-                   sheetName="Locus_bootstrap",col.names=F,
-                   row.names=F,append=T)
-      } else {
-        # text file alternatives
-        bts<-file(paste(of,"Locus-bootstrap[div.part].txt",sep=""), "w")
-        cat(paste(colnames(bs_out),sep=""),"\n",sep="\t",file=bts)
-        for(i in 1:nrow(bs_out)){
-          cat(bs_out[i,],"\n",file=bts,sep="\t")
+      if(!is.null(on)){
+        if(write_res==TRUE){
+          write.xlsx(bs_out,file=paste(of,"[div.part].xlsx",sep=""),
+                     sheetName="Locus_bootstrap",col.names=F,
+                     row.names=F,append=T)
+        } else {
+          # text file alternatives
+          bts<-file(paste(of,"Locus-bootstrap[div.part].txt",sep=""), "w")
+          cat(paste(colnames(bs_out),sep=""),"\n",sep="\t",file=bts)
+          for(i in 1:nrow(bs_out)){
+            cat(bs_out[i,],"\n",file=bts,sep="\t")
+          }
+          close(bts)
         }
-        close(bts)
       }
     }
     zzz<-gc()
     rm(zzz)
     if(plot_res==TRUE && plt==TRUE && bsls==TRUE){
-
+      
       #vectorize#
       sorter<-function(x){
         z<-order(x[1:accDat$nloci,1],decreasing=F)
@@ -489,7 +518,7 @@ div.part<-function(infile, outfile = NULL, gp = 3, WC_Fst = FALSE,
                           ylim=c(0,(max(bs_res[[4]][,3])+
                             min(bs_res[[4]][,3]))),xaxt='n',
                             ylab=names(bs_res)[4],type='n',
-                          xlab='Loci \n (Hover over a point to see locus data)',
+                            xlab='Loci \n (Hover over a point to see locus data)',
                             cex.lab=1.5,cex.axis=1.3,las=1)")
 
       plot.extras_loci[[1]]=c("points(bs_res[[4]][lso123[[4]],1],
@@ -501,9 +530,9 @@ div.part<-function(infile, outfile = NULL, gp = 3, WC_Fst = FALSE,
                               lwd=1,lty=c(1,2),col=c('black','red'))")
   
       xy.labels_loci[[1]]=data.frame(Locus_name=accDat$locus_names[lso123[[4]]],
-                              Gst_Nei=round(bs_res[[4]][lso123[[4]],1],4),
-                              Gst_Hedrick=round(bs_res[[5]][lso123[[4]],1],4),
-                              D_jost=round(bs_res[[6]][lso123[[4]],1],4))
+                                     Gst_Nei=round(bs_res[[4]][lso123[[4]],1],4),
+                                     Gst_Hedrick=round(bs_res[[5]][lso123[[4]],1],4),
+                                     D_jost=round(bs_res[[6]][lso123[[4]],1],4))
       
       y.pos_loci[[1]]=bs_res[[4]][lso123[[4]],1]
       fn_pre_loci[[1]]<-names(bs_res)[4]
@@ -513,7 +542,7 @@ div.part<-function(infile, outfile = NULL, gp = 3, WC_Fst = FALSE,
       # Plot Gst_Hedrick
       plot.call_loci[[2]]=c("plot(bs_res[[5]][lso123[[5]],1],
                           ylim=c(0,1),xaxt='n',ylab=names(bs_res)[5],type='n',
-                          xlab='Loci \n (Hover over a point to see locus data)',
+                            xlab='Loci \n (Hover over a point to see locus data)',
                             cex.lab=1.5,cex.axis=1.3,las=1)")
 
       plot.extras_loci[[2]]=c("points(bs_res[[5]][lso123[[5]],1],
@@ -525,9 +554,9 @@ div.part<-function(infile, outfile = NULL, gp = 3, WC_Fst = FALSE,
                               lwd=1,lty=c(1,2),col=c('black','red'))")
   
       xy.labels_loci[[2]]=data.frame(Locus_name=accDat$locus_names[lso123[[5]]],
-                               Gst_Nei=round(bs_res[[4]][lso123[[5]],1],4),
-                               Gst_Hedrick=round(bs_res[[5]][lso123[[5]],1],4),
-                               D_jost=round(bs_res[[6]][lso123[[5]],1],4))
+                                     Gst_Nei=round(bs_res[[4]][lso123[[5]],1],4),
+                                     Gst_Hedrick=round(bs_res[[5]][lso123[[5]],1],4),
+                                     D_jost=round(bs_res[[6]][lso123[[5]],1],4))
       
       y.pos_loci[[2]]=bs_res[[5]][lso123[[5]],1]
       fn_pre_loci[[2]]<-names(bs_res)[5]
@@ -536,7 +565,7 @@ div.part<-function(infile, outfile = NULL, gp = 3, WC_Fst = FALSE,
       # Plot D_jost
       plot.call_loci[[3]]=c("plot(bs_res[[6]][lso123[[6]],1],
                           ylim=c(0,1),xaxt='n',ylab=names(bs_res)[6],type='n',
-                          xlab='Loci \n (Hover over a point to see locus data)',
+                            xlab='Loci \n (Hover over a point to see locus data)',
                             cex.lab=1.5,cex.axis=1.3,las=1)")
 
       plot.extras_loci[[3]]=c("points(bs_res[[6]][lso123[[6]],1],
@@ -548,9 +577,9 @@ div.part<-function(infile, outfile = NULL, gp = 3, WC_Fst = FALSE,
                               lwd=1,lty=c(1,2),col=c('black','red'))")
   
       xy.labels_loci[[3]]=data.frame(Locus_name=accDat$locus_names[lso123[[6]]],
-                               Gst_Nei=round(bs_res[[4]][lso123[[6]],1],4),
-                               Gst_Hedrick=round(bs_res[[5]][lso123[[6]],1],4),
-                               D_jost=round(bs_res[[6]][lso123[[6]],1],4))
+                                     Gst_Nei=round(bs_res[[4]][lso123[[6]],1],4),
+                                     Gst_Hedrick=round(bs_res[[5]][lso123[[6]],1],4),
+                                     D_jost=round(bs_res[[6]][lso123[[6]],1],4))
       
       y.pos_loci[[3]]=bs_res[[6]][lso123[[6]],1]
       fn_pre_loci[[3]]<-names(bs_res)[6]
@@ -559,28 +588,28 @@ div.part<-function(infile, outfile = NULL, gp = 3, WC_Fst = FALSE,
       if(fst==TRUE){
         plot.call_loci[[4]]=c("plot(bs_res[[8]][lso123[[8]],1],
                           ylim=c(0,(max(bs_res[[8]][,3])+
-                            min(bs_res[[8]][,3]))),xaxt='n',
-                            ylab=names(bs_res)[8],type='n',
-                          xlab='Loci \n (Hover over a point to see locus data)',
-                            cex.lab=1.5,cex.axis=1.3,las=1)")
+                              min(bs_res[[8]][,3]))),xaxt='n',
+                              ylab=names(bs_res)[8],type='n',
+                              xlab='Loci \n (Hover over a point to see locus data)',
+                              cex.lab=1.5,cex.axis=1.3,las=1)")
         
         plot.extras_loci[[4]]=c("points(bs_res[[8]][lso123[[8]],1],
                             pch=15,col='black',cex=1);
-                            arrows(1:accDat$nloci,bs_res[[8]][lso123[[8]],2],
-                            1:accDat$nloci,bs_res[[8]][lso123[[8]],3],code=3,
-                            angle=90,length=0.05,lwd=0.1);
-                            abline(h=c(0,bs_res[[8]][(accDat$nloci+1),2]),
-                            lwd=1,lty=c(1,2),col=c('black','red'))")
+                                arrows(1:accDat$nloci,bs_res[[8]][lso123[[8]],2],
+                                1:accDat$nloci,bs_res[[8]][lso123[[8]],3],code=3,
+                                angle=90,length=0.05,lwd=0.1);
+                                abline(h=c(0,bs_res[[8]][(accDat$nloci+1),2]),
+                                lwd=1,lty=c(1,2),col=c('black','red'))")
   
-      xy.labels_loci[[4]]=data.frame(Locus_name=accDat$locus_names[lso123[[8]]],
-                                Gst_Nei=round(bs_res[[4]][lso123[[8]],1],4),
-                                Gst_Hedrick=round(bs_res[[5]][lso123[[8]],1],4),
-                                D_jost=round(bs_res[[6]][lso123[[8]],1],4),
-                                Fst_WC=round(bs_res[[8]][lso123[[8]],1],4))
+        xy.labels_loci[[4]]=data.frame(Locus_name=accDat$locus_names[lso123[[8]]],
+                                       Gst_Nei=round(bs_res[[4]][lso123[[8]],1],4),
+                                       Gst_Hedrick=round(bs_res[[5]][lso123[[8]],1],4),
+                                       D_jost=round(bs_res[[6]][lso123[[8]],1],4),
+                                       Fst_WC=round(bs_res[[8]][lso123[[8]],1],4))
         
-      y.pos_loci[[4]]=bs_res[[8]][lso123[[8]],1]
-      fn_pre_loci[[4]]<-names(bs_res)[8]
-     }
+        y.pos_loci[[4]]=bs_res[[8]][lso123[[8]],1]
+        fn_pre_loci[[4]]<-names(bs_res)[8]
+      }
     }
     ############################################################################
     ################################## Pairwise ################################
@@ -623,7 +652,7 @@ div.part<-function(infile, outfile = NULL, gp = 3, WC_Fst = FALSE,
     }
     for (i in 1:ncol(pw)){
       true_stat_gp_in[[i]]<-list(infile=pw_data[[i]],gp=gp,bootstrap="FALSE",
-                                 ls="FALSE",fst=fst)
+                                 locs="FALSE",fst=fst)
     }
     if (para == TRUE && para_pack == FALSE) {
       true_stat<-parLapply(cl,true_stat_gp_in, pre.divLowMemory)
@@ -647,28 +676,28 @@ div.part<-function(infile, outfile = NULL, gp = 3, WC_Fst = FALSE,
                       true_stat[[i]]$gst_est_all_hedrick,
                       true_stat[[i]]$djost_est_all)
       }
-        
+      
       true_stat[[i]]<-0
     }
     if(fst==TRUE){
       pwMatList<-lapply(1:9, function(x){
         noquote(matrix(rep("--",((accDat$npops+1)^2)),ncol=(accDat$npops+1),
-               nrow=(accDat$npops+1)))
+                       nrow=(accDat$npops+1)))
       })
     } else {
       pwMatList<-lapply(1:6, function(x){
         noquote(matrix(rep("--",((accDat$npops+1)^2)),ncol=(accDat$npops+1),
-               nrow=(accDat$npops+1)))
+                       nrow=(accDat$npops+1)))
       })
     }
     if(fst==TRUE){
       pwMatListOut<-lapply(1:9, function(x){
-        noquote(matrix(rep("--",((accDat$npops)^2)),ncol=(accDat$npops),
-               nrow=(accDat$npops)))
+        noquote(matrix(rep(NA,((accDat$npops)^2)),ncol=(accDat$npops),
+                       nrow=(accDat$npops)))
       })
     } else {
       pwMatListOut<-lapply(1:6, function(x){
-        noquote(matrix(rep("--",((accDat$npops)^2)),ncol=(accDat$npops),
+        noquote(matrix(rep(NA,((accDat$npops)^2)),ncol=(accDat$npops),
                        nrow=(accDat$npops)))
       })
     }
@@ -683,7 +712,7 @@ div.part<-function(infile, outfile = NULL, gp = 3, WC_Fst = FALSE,
           pwMatList[[i]][pwmat[2,j],pwmat[1,j]]<-pw_glb[j,i]
           pwMatList[[i]][pwmat[1,j],pwmat[2,j]]<-""
           pwMatListOut[[i]][pw[2,j],pw[1,j]]<-pw_glb[j,i]
-          pwMatListOut[[i]][pw[1,j],pw[2,j]]<-""
+          #pwMatListOut[[i]][pw[1,j],pw[2,j]]<-""
         }
         pwMatList[[i]][1,]<-pnames
         pwMatList[[i]][,1]<-pnames
@@ -695,14 +724,14 @@ div.part<-function(infile, outfile = NULL, gp = 3, WC_Fst = FALSE,
           pwMatList[[i]][pwmat[2,j],pwmat[1,j]]<-pw_glb[j,i]
           pwMatList[[i]][pwmat[1,j],pwmat[2,j]]<-""
           pwMatListOut[[i]][pw[2,j],pw[1,j]]<-pw_glb[j,i]
-          pwMatListOut[[i]][pw[1,j],pw[2,j]]<-""
+          #pwMatListOut[[i]][pw[1,j],pw[2,j]]<-""
         }
         pwMatList[[i]][1,]<-pnames
         pwMatList[[i]][,1]<-pnames
         dimnames(pwMatListOut[[i]])<-list(pnamesOut,pnamesOut)
       }
     }
-      
+    
     
     # write object create
     #pnames list
@@ -721,21 +750,22 @@ div.part<-function(infile, outfile = NULL, gp = 3, WC_Fst = FALSE,
                        pwMatList[[i]],rep("",(accDat$npops+1)))
       }
     }
-    if(write_res==TRUE){
-      # write data to excel
-      # Load dependencies
-      
-      # pw stats
-      write.xlsx(pwWrite,file=paste(of,"[div.part].xlsx",sep=""),
-                 sheetName="Pairwise-stats",col.names=F,
-                 row.names=F,append=T)
-    } else {
-      # text file alternatives
-      pw_outer<-file(paste(of,"Pairwise-stats[div.part].txt",sep=""), "w")
-      for(i in 1:nrow(pwWrite)){
-        cat(pwWrite[i,],"\n",file=pw_outer,sep="\t")
+    if(!is.null(on)){
+      if(write_res==TRUE){
+        # write data to excel
+        # Load dependencies
+        # pw stats
+        write.xlsx(pwWrite,file=paste(of,"[div.part].xlsx",sep=""),
+                   sheetName="Pairwise-stats",col.names=F,
+                   row.names=F,append=T)
+      } else {
+        # text file alternatives
+        pw_outer<-file(paste(of,"Pairwise-stats[div.part].txt",sep=""), "w")
+        for(i in 1:nrow(pwWrite)){
+          cat(pwWrite[i,],"\n",file=pw_outer,sep="\t")
+        }
+        close(std)
       }
-      close(std)
     }
     #cleanup
     rm("pwWrite")
@@ -774,7 +804,7 @@ div.part<-function(infile, outfile = NULL, gp = 3, WC_Fst = FALSE,
         bs_pw_para<-list()
         for(i in 1:ncol(pw)){
           input<-list(infile=pw_data[[i]],gp=gp,bootstrap="TRUE",
-                      ls="FALSE",fst=fst)
+                      locs="FALSE",fst=fst)
           pw_inlist<-list()
           for(j in 1:bstrps){
             pw_inlist[[j]]<-input
@@ -839,7 +869,7 @@ div.part<-function(infile, outfile = NULL, gp = 3, WC_Fst = FALSE,
         #sequential vectorized
         pw_inlist<-list()
         for(i in 1:ncol(pw)){
-          input<-list(infile=pw_data[[i]],gp=gp,bootstrap="TRUE",ls="FALSE",
+          input<-list(infile=pw_data[[i]],gp=gp,bootstrap="TRUE",locs="FALSE",
                       fst=fst)
           pw_inlist[[i]]<-list()
           for(j in 1:bstrps){
@@ -860,7 +890,7 @@ div.part<-function(infile, outfile = NULL, gp = 3, WC_Fst = FALSE,
         bs_pw_para<-list()
         for(i in 1:ncol(pw)){
           input<-list(infile=pw_data[[i]],gp=gp,bootstrap="TRUE",
-                      ls="FALSE",fst=fst)
+                      locs="FALSE",fst=fst)
           pw_inlist<-list()
           for(j in 1:bstrps){
             pw_inlist[[j]]<-input
@@ -952,19 +982,21 @@ div.part<-function(infile, outfile = NULL, gp = 3, WC_Fst = FALSE,
                                   cbind(pw_nms,pw_res[[i]])),ncol=4)
         }
       }
-      if(write_res==TRUE){
-        write.xlsx(pw_bs_out,file=paste(of,"[div.part].xlsx",sep=""),
-                   sheetName="Pairwise_bootstrap",col.names=F,
-                   row.names=F,append=T)
-      } else {
-        # text file alternatives
-        pw_bts<-file(paste(of,"Pairwise-bootstrap[div.part].txt",sep=""), "w")
-        cat(paste(colnames(pw_bs_out),sep=""),"\n",sep="\t",file=pw_bts)
-        for(i in 1:nrow(pw_bs_out)){
-          cat(pw_bs_out[i,],"\n",file=pw_bts,sep="\t")
+      if(is.null(on)){
+        if(write_res==TRUE){
+          write.xlsx(pw_bs_out,file=paste(of,"[div.part].xlsx",sep=""),
+                     sheetName="Pairwise_bootstrap",col.names=F,
+                     row.names=F,append=T)
+        } else {
+          # text file alternatives
+          pw_bts<-file(paste(of,"Pairwise-bootstrap[div.part].txt",sep=""), "w")
+          cat(paste(colnames(pw_bs_out),sep=""),"\n",sep="\t",file=pw_bts)
+          for(i in 1:nrow(pw_bs_out)){
+            cat(pw_bs_out[i,],"\n",file=pw_bts,sep="\t")
+          }
+          close(pw_bts)
         }
-        close(pw_bts)
-      }  
+      }
     }
     zzz<-gc()
     rm(zzz)
@@ -972,7 +1004,7 @@ div.part<-function(infile, outfile = NULL, gp = 3, WC_Fst = FALSE,
     #pw plotter
     if(plot_res==TRUE && plt==TRUE && bspw==TRUE){
       pwso<-list()
-      for(i in 1:length(bs_res)){
+      for(i in 1:length(pw_res)){
         pwso[[i]]<-order(pw_res[[i]][,1],decreasing=F)
         if(length(pwso[[i]]) >= 100){
           pwso[[i]]<-pwso[[i]][(length(pwso[[i]])-99):length(pwso[[i]])]
@@ -1005,9 +1037,9 @@ div.part<-function(infile, outfile = NULL, gp = 3, WC_Fst = FALSE,
                             lwd=1,lty=2,col='red')")
   
       xy.labels_pw[[1]]=data.frame(pairwise_name=pw_nms[pwso[[4]]],
-                                 Gst_Nei=round(pw_res[[4]][pwso[[4]],1],4),
-                                 Gst_Hedrick=round(pw_res[[5]][pwso[[4]],1],4),
-                                 D_jost=round(pw_res[[6]][pwso[[4]],1],4))
+                                   Gst_Nei=round(pw_res[[4]][pwso[[4]],1],4),
+                                   Gst_Hedrick=round(pw_res[[5]][pwso[[4]],1],4),
+                                   D_jost=round(pw_res[[6]][pwso[[4]],1],4))
       
       y.pos_pw[[1]]=pw_res[[4]][pwso[[4]],1]
       fn_pre_pw[[1]]<-names(pw_res)[4]
@@ -1030,9 +1062,9 @@ div.part<-function(infile, outfile = NULL, gp = 3, WC_Fst = FALSE,
                             lwd=1,lty=2,col='red')")
   
       xy.labels_pw[[2]]=data.frame(pairwise_name=pw_nms[pwso[[5]]],
-                                 Gst_Nei=round(pw_res[[4]][pwso[[5]],1],4),
-                                 Gst_Hedrick=round(pw_res[[5]][pwso[[5]],1],4),
-                                 D_jost=round(pw_res[[6]][pwso[[5]],1],4))
+                                   Gst_Nei=round(pw_res[[4]][pwso[[5]],1],4),
+                                   Gst_Hedrick=round(pw_res[[5]][pwso[[5]],1],4),
+                                   D_jost=round(pw_res[[6]][pwso[[5]],1],4))
       
       y.pos_pw[[2]]=pw_res[[5]][pwso[[5]],1]
       fn_pre_pw[[2]]<-names(pw_res)[5]
@@ -1054,9 +1086,9 @@ div.part<-function(infile, outfile = NULL, gp = 3, WC_Fst = FALSE,
                             lwd=1,lty=2,col='red')")
     
       xy.labels_pw[[3]]=data.frame(pairwise_name=pw_nms[pwso[[6]]],
-                                 Gst_Nei=round(pw_res[[4]][pwso[[6]],1],4),
-                                 Gst_Hedrick=round(pw_res[[5]][pwso[[6]],1],4),
-                                 D_jost=round(pw_res[[6]][pwso[[6]],1],4))
+                                   Gst_Nei=round(pw_res[[4]][pwso[[6]],1],4),
+                                   Gst_Hedrick=round(pw_res[[5]][pwso[[6]],1],4),
+                                   D_jost=round(pw_res[[6]][pwso[[6]],1],4))
       
       y.pos_pw[[3]]=pw_res[[6]][pwso[[6]],1]
       fn_pre_pw[[3]]<-names(pw_res)[6]
@@ -1064,33 +1096,33 @@ div.part<-function(infile, outfile = NULL, gp = 3, WC_Fst = FALSE,
       if(fst==TRUE){
         plot.call_pw[[4]]=c("plot(pw_res[[8]][pwso[[8]],1],
                         ylim=c(0,(max(pw_res[[8]][,3])+
-                          min(pw_res[[8]][,3]))),xaxt='n',ylab=names(pw_res)[8],type='n',
-                        xlab='Pairwise comparisons 
+                            min(pw_res[[8]][,3]))),xaxt='n',ylab=names(pw_res)[8],type='n',
+                            xlab='Pairwise comparisons 
                         \n (Hover over a point to see pairwise info.)',
                         cex.lab=1.2,cex.axis=1.3,las=1)")
 
         plot.extras_pw[[4]]=c("points(pw_res[[8]][pwso[[8]],1],
                           pch=15,col='black',cex=1);
-                          arrows(1:length(pwso[[8]]),pw_res[[8]][pwso[[8]],2],
-                          1:length(pwso[[8]]),pw_res[[8]][pwso[[8]],3],code=3,
-                          angle=90,length=0.05,lwd=0.1);
-                          abline(h=as.numeric(plot_data321[7]),
-                          lwd=1,lty=2,col='red')")
+                              arrows(1:length(pwso[[8]]),pw_res[[8]][pwso[[8]],2],
+                              1:length(pwso[[8]]),pw_res[[8]][pwso[[8]],3],code=3,
+                              angle=90,length=0.05,lwd=0.1);
+                              abline(h=as.numeric(plot_data321[7]),
+                              lwd=1,lty=2,col='red')")
     
         xy.labels_pw[[4]]=data.frame(pairwise_name=pw_nms[pwso[[8]]],
-                                 Gst_Nei=round(pw_res[[4]][pwso[[8]],1],4),
-                                 Gst_Hedrick=round(pw_res[[5]][pwso[[8]],1],4),
-                                 D_jost=round(pw_res[[6]][pwso[[8]],1],4),
-                                 Fst_WC=round(pw_res[[8]][pwso[[8]],1],4))
+                                     Gst_Nei=round(pw_res[[4]][pwso[[8]],1],4),
+                                     Gst_Hedrick=round(pw_res[[5]][pwso[[8]],1],4),
+                                     D_jost=round(pw_res[[6]][pwso[[8]],1],4),
+                                     Fst_WC=round(pw_res[[8]][pwso[[8]],1],4))
         
         y.pos_pw[[4]]=pw_res[[8]][pwso[[8]],1]
         fn_pre_pw[[4]]<-names(pw_res)[8]
       }
     }
-  ############################### Bootstrap end ################################
+    ############################### Bootstrap end ################################
     
     
-  ################################# Plot resuts ################################
+    ################################# Plot resuts ################################
     #make necessary data available
     if(plt==TRUE && plot_res==TRUE && bsls==TRUE && bspw==TRUE){
       pl<-list(bs_res=bs_res,
@@ -1147,39 +1179,41 @@ div.part<-function(infile, outfile = NULL, gp = 3, WC_Fst = FALSE,
                pw=pw,plot_data321=plot_data321,
                fst=fst)
     }
-    
-    if (plt==TRUE && plot_res==TRUE){
-      suppressWarnings(plotter(x=pl,img="1000x600"))
+    if(!is.null(on)){
+      if (plt==TRUE && plot_res==TRUE){
+        suppressWarnings(plotter(x=pl,img="1000x600"))
+      }
     }
     zzz<-gc()
     rm(zzz)
     
     
-   #############################################################################
+    #############################################################################
     #Data for output
     if(bspw==T && bsls==T){
-      list(standard=noquote(ot1),
-           estimate=noquote(ot2),
+      list(standard=ot1out,
+           estimate=ot2out,
            pairwise=pwMatListOut,
            bs_locus=bs_res1,
            bs_pairwise=pw_res1)
     } else if(bspw==T && bsls==F){
-      list(standard=noquote(ot1),
-           estimate=noquote(ot2),
+      list(standard=ot1out,
+           estimate=ot2out,
            pairwise=pwMatListOut,
            bs_pairwise=pw_res1)
     } else if(bspw==F && bsls==T){
-      list(standard=noquote(ot1),
-           estimate=noquote(ot2),
+      list(standard=ot1out,
+           estimate=ot2out,
            pairwise=pwMatListOut,
            bs_locus=bs_res1)
     } else if(bspw==F && bsls==F){
-        list(standard=noquote(ot1),
-             estimate=noquote(ot2),
-             pairwise=pwMatListOut)
+      list(standard=ot1out,
+           estimate=ot2out,
+           pairwise=pwMatListOut)
     }
   }
 }
+
 ################################################################################
 # div.part end                                                                 #
 ################################################################################
@@ -1199,12 +1233,27 @@ readGenepop<- function (x) {
   gp=x$gp
   infile=x$infile
   bootstrap=x$bootstrap
-  ls=x$ls
+  locs=x$locs
   if(typeof(infile)=="list"){
     data1=infile 
   } else if (typeof(infile)=="character"){
     no_col <- max(count.fields(infile))
-    data1 <- read.delim(infile,fill=T,col.names=1:no_col,header=F)
+    suppressWarnings(flth<-length(readLines(infile)))
+    data1<-matrix(NA,ncol=no_col,nrow=flth)
+    datt<-list()
+    for(i in 1:flth){
+      datt[[i]]<-scan(infile,skip=(i-1),nlines=1,fill=T, 
+                      what=list(rep("\t",no_col)),quiet = T)
+      datt[[i]]<-unlist(datt[[i]])
+      if(is.element(",", datt[[i]])==TRUE){
+        datt[[i]]<-datt[[i]][-(which(datt[[i]] == ","))]
+      }
+      if(length(datt[[i]]) < no_col){
+        datt[[i]]<-c(datt[[i]],rep(NA, no_col-length(datt[[i]])))
+      }
+      data1[i,]<-datt[[i]]
+    }
+    data1<-as.data.frame(data1)
   }
   data1[data1==0]<-NA;data1[data1=="999999"]<-NA;data1[data1=="000000"]<-NA
   raw_data<-data1
@@ -1360,7 +1409,7 @@ readGenepop<- function (x) {
   #calculate allele frequencies
   afCalcpop<-lapply(1:length(actab), function(x){
     lapply(1:length(actab[[x]]),function(y){
-      actab[[x]][[y]]/(indtyppop[[x]][[y]]*2)
+      actab[[x]][[y]]/(indtyppop[[x]][y]*2)
     })
   })
   #assign allele freqs to frequency matrices
@@ -1431,7 +1480,7 @@ readGenepop<- function (x) {
          pop_names=pop_names,
          indtyp=indtyp,
          nalleles=nalleles,
-         ls=ls,
+         locs=locs,
          bs_file=bs_data_file,
          obs_allele_num=obs_count)
   } else if(bootstrap==F){
@@ -1451,7 +1500,7 @@ readGenepop<- function (x) {
          pop_names=pop_names,
          indtyp=indtyp,
          nalleles=nalleles,
-         ls=ls,
+         locs=locs,
          obs_allele_num=obs_count)
   }
 }
@@ -1472,7 +1521,7 @@ readGenepop<- function (x) {
 ################################################################################
 pre.div<-function(x){
   data1<-x #x is a readGenepop out object
-  ls<-x$ls
+  locs<-x$locs
   ##############################################################################
   # create 'easy use' objects from data1 (readGenepop output)
   # pl = pop_list
@@ -1534,7 +1583,7 @@ pre.div<-function(x){
   ht[ht=="NaN"]<-NA
   
   #end mean frequency vectorize#################################################
-
+  
   
   ###end locus stats legacy code
   #locus stats vectorize########################################################
@@ -1575,7 +1624,7 @@ pre.div<-function(x){
   djost_est_all<-round(1/((1/mean(na.omit(djost_est))+(var(na.omit(djost_est))*
     ((1/mean(na.omit(djost_est)))^3)))),4)
   ##############################################################################
- if(ls==T){  
+  if(locs==T){  
     list(hs=hs,
          hst=hst,
          dst=dst,
@@ -1732,25 +1781,25 @@ plotter<-function(x,img="1200x600"){
                                                   "_locus_stat_",sep=""),
                                  dir=jjj$direct,
                                  window.size="2100x1000"))
-     unlink(paste(jjj$direct,jjj$fn_pre_loci[[4]],"_locus_stat_",fl_ext,sep=""))
+      unlink(paste(jjj$direct,jjj$fn_pre_loci[[4]],"_locus_stat_",fl_ext,sep=""))
     }
     if(exists("jjj", where=".GlobalEnv")==TRUE){
-    rm(jjj, pos=".GlobalEnv")
+      rm(jjj, pos=".GlobalEnv")
     }
     if(exists("accDat", where=".GlobalEnv")==TRUE){
-    rm(accDat, pos=".GlobalEnv")
+      rm(accDat, pos=".GlobalEnv")
     }
     if(exists("bs_res", where=".GlobalEnv")==TRUE){
-    rm(bs_res, pos=".GlobalEnv")
+      rm(bs_res, pos=".GlobalEnv")
     }
     if(exists("lso123", where=".GlobalEnv")==TRUE){
-    rm(lso123, pos=".GlobalEnv")
+      rm(lso123, pos=".GlobalEnv")
     }
     if(exists("sp.header", where=".GlobalEnv")==TRUE){
-    rm(sp.header, pos=".GlobalEnv")
+      rm(sp.header, pos=".GlobalEnv")
     }
     if(exists("plot_data321", where=".GlobalEnv")==TRUE){
-    rm(plot_data321, pos=".GlobalEnv")
+      rm(plot_data321, pos=".GlobalEnv")
     }
     #rm(jjj,accDat,bs_res,lso123,sp.header,pos=".GlobalEnv")
     
@@ -1829,25 +1878,25 @@ plotter<-function(x,img="1200x600"){
     }
     
     if(exists("jjj", where=".GlobalEnv")==TRUE){
-    rm(jjj, pos=".GlobalEnv")
+      rm(jjj, pos=".GlobalEnv")
     }
     if(exists("accDat", where=".GlobalEnv")==TRUE){
-    rm(accDat, pos=".GlobalEnv")
+      rm(accDat, pos=".GlobalEnv")
     }
     if(exists("pw_res", where=".GlobalEnv")==TRUE){
-    rm(pw_res, pos=".GlobalEnv")
+      rm(pw_res, pos=".GlobalEnv")
     }
     if(exists("pwso", where=".GlobalEnv")==TRUE){
-    rm(pwso, pos=".GlobalEnv")
+      rm(pwso, pos=".GlobalEnv")
     }
     if(exists("sp.header", where=".GlobalEnv")==TRUE){
-    rm(sp.header, pos=".GlobalEnv")
+      rm(sp.header, pos=".GlobalEnv")
     }
     if(exists("plot_data321", where=".GlobalEnv")==TRUE){
-    rm(plot_data321, pos=".GlobalEnv")
+      rm(plot_data321, pos=".GlobalEnv")
     }
     if(exists("pw", where=".GlobalEnv")==TRUE){
-    rm(pw, pos=".GlobalEnv")
+      rm(pw, pos=".GlobalEnv")
     }
     #rm(jjj,accDat,plot_data,pw,pw_res,pwso,sp.header,pos=".GlobalEnv")
     
@@ -1941,7 +1990,7 @@ plotter<-function(x,img="1200x600"){
                                dir=jjj$direct,
                                window.size="2100x1000"))
     unlink(paste(jjj$direct,jjj$fn_pre_pw[[1]],"_pairwise_stats_",
-                fl_ext,sep=""))
+                 fl_ext,sep=""))
     #G'st_pw
     suppressWarnings(imagesend(plot.call=jjj$plot.call_pw[[2]],
                                x.pos=jjj$x.pos_pw,
@@ -1995,31 +2044,31 @@ plotter<-function(x,img="1200x600"){
                    fl_ext,sep=""))
     }
     if(exists("jjj", where=".GlobalEnv")==TRUE){
-    rm(jjj, pos=".GlobalEnv")
+      rm(jjj, pos=".GlobalEnv")
     }
     if(exists("accDat", where=".GlobalEnv")==TRUE){
-    rm(accDat, pos=".GlobalEnv")
+      rm(accDat, pos=".GlobalEnv")
     }
     if(exists("pw_res", where=".GlobalEnv")==TRUE){
-    rm(pw_res, pos=".GlobalEnv")
+      rm(pw_res, pos=".GlobalEnv")
     }
     if(exists("pwso", where=".GlobalEnv")==TRUE){
-    rm(pwso, pos=".GlobalEnv")
+      rm(pwso, pos=".GlobalEnv")
     }
     if(exists("sp.header", where=".GlobalEnv")==TRUE){
-    rm(sp.header, pos=".GlobalEnv")
+      rm(sp.header, pos=".GlobalEnv")
     }
     if(exists("plot_data321", where=".GlobalEnv")==TRUE){
-    rm(plot_data321, pos=".GlobalEnv")
+      rm(plot_data321, pos=".GlobalEnv")
     }
     if(exists("pw", where=".GlobalEnv")==TRUE){
-    rm(pw, pos=".GlobalEnv")
+      rm(pw, pos=".GlobalEnv")
     }
     if(exists("bs_res", where=".GlobalEnv")==TRUE){
-    rm(bs_res, pos=".GlobalEnv")
+      rm(bs_res, pos=".GlobalEnv")
     }
     if(exists("lso123", where=".GlobalEnv")==TRUE){
-    rm(lso123, pos=".GlobalEnv")
+      rm(lso123, pos=".GlobalEnv")
     }
   }
 }
@@ -2064,24 +2113,26 @@ in.calc<-function(infile, outfile=NULL, gp=3, bs_locus=FALSE, bs_pairwise=FALSE,
       require("xlsx")
     } else {
       Warning1<-{paste(" "," ",
-                  "[NOTE]",
-                  "___________________________________________________________",
-                  "Please install the package 'xlsx' if you would like your", 
-                  "results written to an Excel workbook.",
-                  "Alternatively, your result will automatically be written",
-                  "to .txt files.",
-                  "___________________________________________________________",
-                  "To install 'xlsx' use:",
-                  "> install.packages('xlsx', dependencies=TRUE)",
-                  "See:",
-                  "> ?install.packages - for usage details.",
-                  "___________________________________________________________",
+                       "[NOTE]",
+                       "___________________________________________________________",
+                       "Please install the package 'xlsx' if you would like your", 
+                       "results written to an Excel workbook.",
+                       "Alternatively, your result will automatically be written",
+                       "to .txt files.",
+                       "___________________________________________________________",
+                       "To install 'xlsx' use:",
+                       "> install.packages('xlsx', dependencies=TRUE)",
+                       "See:",
+                       "> ?install.packages - for usage details.",
+                       "___________________________________________________________",
                        sep="\n")
       }
       cat(noquote(Warning1))
     }
-    suppressWarnings(dir.create(path=paste(getwd(),"/",on,
-                                           "-[diveRsity]","/",sep="")))
+    if(!is.null(on)){
+      suppressWarnings(dir.create(path=paste(getwd(),"/",on,
+                                             "-[diveRsity]","/",sep="")))
+    }
     
     of<-paste(getwd(),"/",on,"-[diveRsity]","/",sep="")
     # Parallel system opti
@@ -2089,44 +2140,44 @@ in.calc<-function(infile, outfile=NULL, gp=3, bs_locus=FALSE, bs_pairwise=FALSE,
       if(Sys.info()["sysname"][[1]]=="Linux"){
         para_pack_inst<-is.element(c("snow","doSNOW","foreach","iterators"),
                                    installed.packages()[,1])
-        } else {
-          para_pack_inst<-is.element(c("parallel","doParallel","foreach",
-                                       "iterators"),installed.packages()[,1])
-        }
-        para_pack<-any(para_pack_inst==FALSE)
+      } else {
+        para_pack_inst<-is.element(c("parallel","doParallel","foreach",
+                                     "iterators"),installed.packages()[,1])
+      }
+      para_pack<-any(para_pack_inst==FALSE)
     }
     if (para == TRUE && para_pack == TRUE){
       if(Sys.info()["sysname"][[1]]=="Linux"){
         Warning3<-{paste(" "," ",
-                 "[NOTE]",
-                 "___________________________________________________________",
-                 "Please make sure the packages 'doSNOW', 'snow', 'foreach'",
-                 " and 'iterators' are installed. These are required to run",
-                 " your analysis in parallel.",
-                 "Your analysis will be run sequentially!",
-                 "___________________________________________________________",
-                 "To install these use:",
-                 "> install.packages()",
-                 "See:",
-                 "> ?install.packages - for usage details.",
-                 "___________________________________________________________",
-                 sep="\n")
+                         "[NOTE]",
+                         "___________________________________________________________",
+                         "Please make sure the packages 'doSNOW', 'snow', 'foreach'",
+                         " and 'iterators' are installed. These are required to run",
+                         " your analysis in parallel.",
+                         "Your analysis will be run sequentially!",
+                         "___________________________________________________________",
+                         "To install these use:",
+                         "> install.packages()",
+                         "See:",
+                         "> ?install.packages - for usage details.",
+                         "___________________________________________________________",
+                         sep="\n")
         }
       } else {
         Warning3<-{paste(" "," ",
-                 "[NOTE]",
-                 "___________________________________________________________",
-                 "Please make sure the packages 'parallel', 'doParallel',",
-                 "'foreach' and 'iterators' are installed. These are required",
-                 " to run your analysis in parallel.",
-                 "Your analysis will be run sequentially!",
-                 "___________________________________________________________",
-                 "To install these use:",
-                 "> install.packages()",
-                 "See:",
-                 "> ?install.packages - for usage details.",
-                 "___________________________________________________________",
-                 sep="\n")
+                         "[NOTE]",
+                         "___________________________________________________________",
+                         "Please make sure the packages 'parallel', 'doParallel',",
+                         "'foreach' and 'iterators' are installed. These are required",
+                         " to run your analysis in parallel.",
+                         "Your analysis will be run sequentially!",
+                         "___________________________________________________________",
+                         "To install these use:",
+                         "> install.packages()",
+                         "See:",
+                         "> ?install.packages - for usage details.",
+                         "___________________________________________________________",
+                         sep="\n")
         }
       }
       cat(noquote(Warning3))
@@ -2136,16 +2187,18 @@ in.calc<-function(infile, outfile=NULL, gp=3, bs_locus=FALSE, bs_pairwise=FALSE,
     #source("in.bootstrap.R")
     inls2<-list(D,gp,"FALSE",0,"FALSE")
     res_out<-in.bs(inls2)[[1]]
-    if(write_res==TRUE){
-      write.xlsx(res_out,file=paste(of,"[In.calc].xlsx",sep=""),
-                 sheetName="In_allele_stats",col.names=T,row.names=T,append=F)
-    } else {
-      all_out<-file(paste(of,"Allele-In[in.calc].txt",sep=""),"w")
-      cat(paste(colnames(res_out),sep=""),"\n",sep="\t",file=all_out)
-      for(i in 1:nrow(res_out)){
-        cat(res_out[i,],"\n",sep="\t",file=all_out)
+    if(!is.null(on)){
+      if(write_res==TRUE){
+        write.xlsx(res_out,file=paste(of,"[In.calc].xlsx",sep=""),
+                   sheetName="In_allele_stats",col.names=T,row.names=T,append=F)
+      } else {
+        all_out<-file(paste(of,"Allele-In[in.calc].txt",sep=""),"w")
+        cat(paste(colnames(res_out),sep=""),"\n",sep="\t",file=all_out)
+        for(i in 1:nrow(res_out)){
+          cat(res_out[i,],"\n",sep="\t",file=all_out)
+        }
+        close(all_out)
       }
-      close(all_out)
     }
     ######################################################################
     # overall In
@@ -2182,7 +2235,7 @@ in.calc<-function(infile, outfile=NULL, gp=3, bs_locus=FALSE, bs_pairwise=FALSE,
     # pairwise locus In bootstrap
     if(pw==T){
       inls<-list(D, gp, FALSE, TRUE)
-      names(inls)<-c("infile","gp","bootstrap","ls")
+      names(inls)<-c("infile","gp","bootstrap","locs")
       data<-readGenepop(inls)
       af<-data$allele_freq
       np<-data$npops
@@ -2247,7 +2300,7 @@ in.calc<-function(infile, outfile=NULL, gp=3, bs_locus=FALSE, bs_pairwise=FALSE,
         pw_bs<-lapply(pw_bs_in, in.bs)
       }
       for(i in 1:ncol(pwc)){
-      #  pw_bs[[i]]<-in.bs(pw_data[[i]],gp,pw,NBS)[[2]]
+        #  pw_bs[[i]]<-in.bs(pw_data[[i]],gp,pw,NBS)[[2]]
         pw_bs_out[[i]]<-matrix(cbind(rownames(pw_bs[[i]]),
                                      pw_bs[[i]][,1:3]),ncol=4)
       }
@@ -2260,18 +2313,20 @@ in.calc<-function(infile, outfile=NULL, gp=3, bs_locus=FALSE, bs_pairwise=FALSE,
         pw_in_bs<-matrix(rbind(pw_in_bs,c(names(pw_bs)[j],"","",""),
                                pw_bs_out[[j]]),ncol=4)
       }
-      if(write_res==TRUE){
-        write.xlsx(pw_in_bs,file=paste(of, "[In.calc].xlsx",sep=""),
-                   sheetName="Pairwise_bootstraps",col.names=F,
-                   row.names=F,append=T)
-      } else {
-        pw_bs<-file(paste(of,"Pairwise-bootstrap[in.calc].txt",sep=""),"w")
-        cat(paste(colnames(pw_in_bs),sep=""),"\n",sep="\t",file=pw_bs)
-        for(i in 1:nrow(pw_in_bs)){
-          cat(pw_in_bs[i,],"\n",sep="\t",file=pw_bs)
+      if(!is.null(on)){
+        if(write_res==TRUE){
+          write.xlsx(pw_in_bs,file=paste(of, "[In.calc].xlsx",sep=""),
+                     sheetName="Pairwise_bootstraps",col.names=F,
+                     row.names=F,append=T)
+        } else {
+          pw_bs<-file(paste(of,"Pairwise-bootstrap[in.calc].txt",sep=""),"w")
+          cat(paste(colnames(pw_in_bs),sep=""),"\n",sep="\t",file=pw_bs)
+          for(i in 1:nrow(pw_in_bs)){
+            cat(pw_in_bs[i,],"\n",sep="\t",file=pw_bs)
+          }
+          close(pw_bs)
         }
-        close(pw_bs)
-      } 
+      }
     }
     
     if(BS==F && pw==F){
@@ -2314,12 +2369,27 @@ in.bs<-function(x){
     gp=x$gp
     infile=x$infile
     bootstrap=x$bootstrap
-    ls=x$ls
+    locs=x$locs
     if(typeof(infile)=="list"){
       data1=infile 
     } else if (typeof(infile)=="character"){
       no_col <- max(count.fields(infile))
-      data1 <- read.delim(infile,fill=T,col.names=1:no_col,header=F)
+      suppressWarnings(flth<-length(readLines(infile)))
+      data1<-matrix(NA,ncol=no_col,nrow=flth)
+      datt<-list()
+      for(i in 1:flth){
+        datt[[i]]<-scan(infile,skip=(i-1),nlines=1,fill=T, 
+                        what=list(rep("\t",no_col)),quiet = T)
+        datt[[i]]<-unlist(datt[[i]])
+        if(is.element(",", datt[[i]])==TRUE){
+          datt[[i]]<-datt[[i]][-(which(datt[[i]] == ","))]
+        }
+        if(length(datt[[i]]) < no_col){
+          datt[[i]]<-c(datt[[i]],rep(NA, no_col-length(datt[[i]])))
+        }
+        data1[i,]<-datt[[i]]
+      }
+      data1<-as.data.frame(data1)
     }
     data1[data1==0]<-NA;data1[data1=="999999"]<-NA;data1[data1=="000000"]<-NA
     raw_data<-data1
@@ -2339,6 +2409,9 @@ in.bs<-function(x){
     N<-pop_sizes
     
     nloci<- (pop_pos[1]-2)
+    if(nloci != (ncol(raw_data)-1)){
+      stop("Check your input file for formatting errors!")
+    }
     loci_names<-as.vector(data1[2:(pop_pos[1]-1),1])
     pop_list<-list()
     for (i in 1:npops){
@@ -2350,13 +2423,11 @@ in.bs<-function(x){
     
     if (gp==3) {
       plMake<-function(x){
-        return(matrix(suppressWarnings(sprintf("%06g",as.numeric(x))),
-               nrow=nrow(x),ncol=ncol(x)))
+        return(matrix(sprintf("%06g",as.numeric(x)),nrow=nrow(x),ncol=ncol(x)))
       }
     } else if (gp==2) {
       plMake<-function(x){
-        return(matrix(suppressWarnings(sprintf("%04g",as.numeric(x))),
-               nrow=nrow(x),ncol=ncol(x)))
+        return(matrix(sprintf("%04g",as.numeric(x)),nrow=nrow(x),ncol=ncol(x)))
       }
     }
     pop_list<-lapply(pop_list, plMake)
@@ -2477,7 +2548,7 @@ in.bs<-function(x){
     #calculate allele frequencies
     afCalcpop<-lapply(1:length(actab), function(x){
       lapply(1:length(actab[[x]]),function(y){
-        actab[[x]][[y]]/(indtyppop[[x]][[y]]*2)
+        actab[[x]][[y]]/(indtyppop[[x]][y]*2)
       })
     })
     #assign allele freqs to frequency matrices
@@ -2546,7 +2617,7 @@ in.bs<-function(x){
            pop_names=pop_names,
            indtyp=indtyp,
            nalleles=nalleles,
-           ls=ls,
+           locs=locs,
            bs_file=bs_data_file)
     } else if(bootstrap==F){
       list(npops=npops, 
@@ -2565,11 +2636,11 @@ in.bs<-function(x){
            pop_names=pop_names,
            indtyp=indtyp,
            nalleles=nalleles,
-           ls=ls)
+           locs=locs)
     }
   }
   inls<-list(D, gp, FALSE, TRUE)
-  names(inls)<-c("infile","gp","bootstrap","ls")
+  names(inls)<-c("infile","gp","bootstrap","locs")
   data<-readGenepop(inls)
   af<-data$allele_freq
   np<-data$npops
@@ -2647,7 +2718,7 @@ in.bs<-function(x){
     bs_sum<-matrix(rep(0,(nl*NBS)),ncol=nl)
     colnames(bs_sum)<-ln
     inls_bs<-list(D,gp,TRUE,TRUE)
-    names(inls_bs)<-c("infile","gp","bootstrap","ls")
+    names(inls_bs)<-c("infile","gp","bootstrap","locs")
     for(w in 1:NBS){
       data_bs<-readGenepop(inls_bs)
       af_bs<-data_bs$allele_freq
@@ -2767,12 +2838,27 @@ readGenepop.user<- function (infile=NULL, gp=3, bootstrap=FALSE) {
   gp=gp
   infile=infile
   bootstrap=bootstrap
-  ls=ls
+  #locs=locs
   if(typeof(infile)=="list"){
     data1=infile 
   } else if (typeof(infile)=="character"){
     no_col <- max(count.fields(infile))
-    data1 <- read.delim(infile,fill=T,col.names=1:no_col,header=F)
+    suppressWarnings(flth<-length(readLines(infile)))
+    data1<-matrix(NA,ncol=no_col,nrow=flth)
+    datt<-list()
+    for(i in 1:flth){
+      datt[[i]]<-scan(infile,skip=(i-1),nlines=1,fill=T, 
+                      what=list(rep("\t",no_col)),quiet = T)
+      datt[[i]]<-unlist(datt[[i]])
+      if(is.element(",", datt[[i]])==TRUE){
+        datt[[i]]<-datt[[i]][-(which(datt[[i]] == ","))]
+      }
+      if(length(datt[[i]]) < no_col){
+        datt[[i]]<-c(datt[[i]],rep(NA, no_col-length(datt[[i]])))
+      }
+      data1[i,]<-datt[[i]]
+    }
+    data1<-as.data.frame(data1)
   }
   data1[data1==0]<-NA;data1[data1=="999999"]<-NA;data1[data1=="000000"]<-NA
   raw_data<-data1
@@ -2792,6 +2878,9 @@ readGenepop.user<- function (infile=NULL, gp=3, bootstrap=FALSE) {
   N<-pop_sizes
   
   nloci<- (pop_pos[1]-2)
+  if(nloci != (ncol(raw_data)-1)){
+    stop("Check your input file for formatting errors!")
+  }
   loci_names<-as.vector(data1[2:(pop_pos[1]-1),1])
   pop_list<-list()
   for (i in 1:npops){
@@ -2801,18 +2890,16 @@ readGenepop.user<- function (infile=NULL, gp=3, bootstrap=FALSE) {
   
   
   
-    if (gp==3) {
-      plMake<-function(x){
-        return(matrix(suppressWarnings(sprintf("%06g",as.numeric(x))),
-               nrow=nrow(x),ncol=ncol(x)))
-      }
-    } else if (gp==2) {
-      plMake<-function(x){
-        return(matrix(suppressWarnings(sprintf("%04g",as.numeric(x))),
-               nrow=nrow(x),ncol=ncol(x)))
-      }
+  if (gp==3) {
+    plMake<-function(x){
+      return(matrix(sprintf("%06g",as.numeric(x)),nrow=nrow(x),ncol=ncol(x)))
     }
-  pop_list<-lapply(pop_list, plMake)
+  } else if (gp==2) {
+    plMake<-function(x){
+      return(matrix(sprintf("%04g",as.numeric(x)),nrow=nrow(x),ncol=ncol(x)))
+    }
+  }
+  suppressWarnings(pop_list<-lapply(pop_list, plMake))
   
   
   for(i in 1:npops){
@@ -2930,7 +3017,7 @@ readGenepop.user<- function (infile=NULL, gp=3, bootstrap=FALSE) {
   #calculate allele frequencies
   afCalcpop<-lapply(1:length(actab), function(x){
     lapply(1:length(actab[[x]]),function(y){
-      actab[[x]][[y]]/(indtyppop[[x]][[y]]*2)
+      actab[[x]][[y]]/(indtyppop[[x]][y]*2)
     })
   })
   #assign allele freqs to frequency matrices
@@ -3001,7 +3088,7 @@ readGenepop.user<- function (infile=NULL, gp=3, bootstrap=FALSE) {
          pop_names=pop_names,
          indtyp=indtyp,
          nalleles=nalleles,
-         ls=ls,
+         #locs=locs,
          bs_file=bs_data_file,
          obs_allele_num=obs_count)
   } else if(bootstrap==F){
@@ -3021,7 +3108,7 @@ readGenepop.user<- function (infile=NULL, gp=3, bootstrap=FALSE) {
          pop_names=pop_names,
          indtyp=indtyp,
          nalleles=nalleles,
-         ls=ls,
+         #locs=locs,
          obs_allele_num=obs_count)
   }
 }
@@ -3047,13 +3134,28 @@ pre.divLowMemory<-function(y){
     gp=x$gp
     infile=x$infile
     bootstrap=x$bootstrap
-    ls=x$ls
+    locs=x$locs
     fst=x$fst
     if(typeof(infile)=="list"){
       data1=infile 
     } else if (typeof(infile)=="character"){
       no_col <- max(count.fields(infile))
-      data1 <- read.delim(infile,fill=T,col.names=1:no_col,header=F)
+      suppressWarnings(flth<-length(readLines(infile)))
+      data1<-matrix(NA,ncol=no_col,nrow=flth)
+      datt<-list()
+      for(i in 1:flth){
+        datt[[i]]<-scan(infile,skip=(i-1),nlines=1,fill=T, 
+                        what=list(rep("\t",no_col)),quiet = T)
+        datt[[i]]<-unlist(datt[[i]])
+        if(is.element(",", datt[[i]])==TRUE){
+          datt[[i]]<-datt[[i]][-(which(datt[[i]] == ","))]
+        }
+        if(length(datt[[i]]) < no_col){
+          datt[[i]]<-c(datt[[i]],rep(NA, no_col-length(datt[[i]])))
+        }
+        data1[i,]<-datt[[i]]
+      }
+      data1<-as.data.frame(data1)
     }
     data1[data1==0]<-NA;data1[data1=="999999"]<-NA;data1[data1=="000000"]<-NA
     raw_data<-data1
@@ -3073,6 +3175,9 @@ pre.divLowMemory<-function(y){
     N<-pop_sizes
     
     nloci<- (pop_pos[1]-2)
+    if(nloci != (ncol(raw_data)-1)){
+      stop("Check your input file for formatting errors!")
+    }
     loci_names<-as.vector(data1[2:(pop_pos[1]-1),1])
     pop_list<-list()
     for (i in 1:npops){
@@ -3084,13 +3189,11 @@ pre.divLowMemory<-function(y){
     
     if (gp==3) {
       plMake<-function(x){
-        return(matrix(suppressWarnings(sprintf("%06g",as.numeric(x))),
-               nrow=nrow(x),ncol=ncol(x)))
+        suppressWarnings(return(matrix(sprintf("%06g",as.numeric(x)),nrow=nrow(x),ncol=ncol(x))))
       }
     } else if (gp==2) {
       plMake<-function(x){
-        return(matrix(suppressWarnings(sprintf("%04g",as.numeric(x))),
-               nrow=nrow(x),ncol=ncol(x)))
+        suppressWarnings(return(matrix(sprintf("%04g",as.numeric(x)),nrow=nrow(x),ncol=ncol(x))))
       }
     }
     pop_list<-lapply(pop_list, plMake)
@@ -3211,14 +3314,14 @@ pre.divLowMemory<-function(y){
     #calculate allele frequencies
     afCalcpop<-lapply(1:length(actab), function(x){
       lapply(1:length(actab[[x]]),function(y){
-        actab[[x]][[y]]/(indtyppop[[x]][[y]]*2)
+        actab[[x]][[y]]/(indtyppop[[x]][y]*2)
       })
     })
     #assign allele freqs to frequency matrices
     obs_count<-allele_freq
     for(i in 1:npops){
       for(j in 1:nloci){
-        allele_freq[[j]][names(afCalcpop[[i]][[j]]),i]<-afCalcpop[[i]][[j]]
+        allele_freq[[j]][allele_names[[i]][[j]],i]<-afCalcpop[[i]][[j]]
         obs_count[[j]][names(actab[[i]][[j]]),i]<-actab[[i]][[j]]
       }
     }
@@ -3282,7 +3385,7 @@ pre.divLowMemory<-function(y){
            pop_names=pop_names,
            indtyp=indtyp,
            nalleles=nalleles,
-           ls=ls,
+           locs=locs,
            #bs_file=bs_data_file,
            obs_allele_num=obs_count,
            fst=fst,
@@ -3304,7 +3407,7 @@ pre.divLowMemory<-function(y){
            pop_names=pop_names,
            indtyp=indtyp,
            nalleles=nalleles,
-           ls=ls,
+           locs=locs,
            obs_allele_num=obs_count,
            fst=fst,
            gp=gp)
@@ -3312,19 +3415,30 @@ pre.divLowMemory<-function(y){
   }
   x<-readGenepopX(y)
   data1<-x #x is a readGenepop out object
-  ls<-x$ls
+  locs<-x$locs
   fst=x$fst
   ##############################################################################
   #fstWC define
   if(fst==TRUE){
     fstWC<-function(x){
-      all_genot<-x$pop_list[[1]]
+      badData<-vector()
+      for(i in 1:x$nloci){
+        badData[i]<-is.element(0, x$indtyp[[i]])
+      }
+      if(length(badData)>0){
+        nl<-x$nloci-length(badData)
+      } else {
+        nl<-x$nloci
+      }
+      gdData<-which(badData==FALSE)
+      badData<-which(badData==TRUE)
+      all_genot<-x$pop_list[[1]][,gdData]
       for(i in 2:x$npops){
-        all_genot<-rbind(all_genot,x$pop_list[[i]])
+        all_genot<-rbind(all_genot,x$pop_list[[i]][,gdData])
       }
       genot<-apply(all_genot,2,unique)
       genot<-lapply(genot, function(x){
-        if(sum(is.na(x))>0){
+        if (sum(is.na(x))>0){
           y<-which(is.na(x)==TRUE)
           x_new<-x[-y]
           return(x_new)
@@ -3333,6 +3447,7 @@ pre.divLowMemory<-function(y){
         }
       })
       #count genotypes
+      
       genoCount<-list()
       for(i in 1:ncol(all_genot)){
         genoCount[[i]]<-matrix(0,ncol=length(genot[[i]]))
@@ -3348,11 +3463,11 @@ pre.divLowMemory<-function(y){
         }
       }
       h_sum<-list()
-      for(i in 1:x$nloci){
+      for(i in 1:ncol(all_genot)){
         h_sum[[i]]<-vector()
         cnSplit<-strsplit(colnames(genoCount[[i]]),"/")
-        for(j in 1:length(x$all_alleles[[i]])){
-          het_id1<-lapply(cnSplit, is.element, x$all_alleles[[i]][j])
+        for(j in 1:length(x$all_alleles[[gdData[i]]])){
+          het_id1<-lapply(cnSplit, is.element, x$all_alleles[[gdData[i]]][j])
           het_id2<-lapply(het_id1, sum)
           het_id2<-as.vector(het_id2)
           het_id3<-which(het_id2==1)
@@ -3361,20 +3476,22 @@ pre.divLowMemory<-function(y){
       }
       indtyp_tot<-lapply(x$indtyp, sum)
       kk_hsum<-list()
-      for(i in 1:x$nloci){
-        kk_hsum[[i]]<-list(h_sum[[i]],indtyp_tot[[i]])
+      for(i in 1:ncol(all_genot)){
+        kk_hsum[[i]]<-list(h_sum[[i]],indtyp_tot[[gdData[i]]])
       }
       kk_hbar<-lapply(kk_hsum, function(x){
         return(x[[1]]/x[[2]])
       })
       pdat<-list()
-      for(i in 1:x$nloci){
-        pdat[[i]]<-list(x$allele_freq[[i]],x$indtyp[[i]])
+      for(i in 1:ncol(all_genot)){
+        pdat[[i]]<-list(x$allele_freq[[gdData[i]]],x$indtyp[[gdData[i]]])
       }
       kk_p<-lapply(pdat, function(x){
-        apply(x[[1]], 1, function(y){
-          y*(2*x[[2]])
-        })
+        if(is.null(x[[1]])==FALSE){
+          apply(x[[1]], 1, function(y){
+            y*(2*x[[2]])
+          })
+        }
       })
       res<-matrix(0,(x$nloci+1),3)
       colnames(res)<-c("Fis_WC","Fst_WC","Fit_WC")
@@ -3383,14 +3500,15 @@ pre.divLowMemory<-function(y){
       a<-vector()
       b<-vector()
       c<-vector()
-      for(i in 1:x$nloci){
-        kknbar<-indtyp_tot[[i]]/x$npops
-        kknC<-(indtyp_tot[[i]]-sum(x$indtyp[[i]]^2)/indtyp_tot[[i]])/(x$npops-1)
-        kkptild<-kk_p[[i]]/(2*x$indtyp[[i]])
+      for(i in 1:ncol(all_genot)){
+        kknbar<-indtyp_tot[[gdData[i]]]/x$npops
+        kknC<-(indtyp_tot[[gdData[i]]]-sum(x$indtyp[[gdData[i]]]^2)/
+               indtyp_tot[[gdData[i]]])/(x$npops-1)
+        kkptild<-kk_p[[i]]/(2*x$indtyp[[gdData[i]]])
         kkptild[kkptild=="NaN"]<-NA
-        kkpbar<-colSums(kk_p[[i]])/(2*indtyp_tot[[i]])
-        kks2<-colSums(x$indtyp[[i]]*(kkptild-rep(kkpbar,each = x$npops))^2)/
-          ((x$npops-1)*kknbar)
+        kkpbar<-colSums(kk_p[[i]])/(2*indtyp_tot[[gdData[i]]])
+        kks2<-colSums(x$indtyp[[gdData[i]]]*
+          (kkptild-rep(kkpbar,each = x$npops))^2)/((x$npops-1)*kknbar)
         kkA<-kkpbar*(1-kkpbar)-(x$npops-1)*kks2/x$npops
         kka<-kknbar*(kks2-(kkA-(kk_hbar[[i]]/4))/(kknbar-1))/kknC
         kkb<-kknbar*(kkA-(2*(kknbar-1))*kk_hbar[[i]]/(4*kknbar))/(kknbar-1)
@@ -3399,11 +3517,12 @@ pre.divLowMemory<-function(y){
         a[i]<-sum(kka)
         b[i]<-sum(kkb)
         c[i]<-sum(kkc)
-        res[i,"Fis_WC"]<- round(1-sum(kkc)/sum(kkb+kkc),4)
-        res[i,"Fst_WC"]<- round(sum(kka)/sum(kka+kkb+kkc),4)
-        res[i,"Fit_WC"]<- round(1-sum(kkc)/sum(kka+kkb+kkc),4)
+        res[gdData[i],"Fis_WC"]<- round(1-sum(kkc)/sum(kkb+kkc),4)
+        res[gdData[i],"Fst_WC"]<- round(sum(kka)/sum(kka+kkb+kkc),4)
+        res[gdData[i],"Fit_WC"]<- round(1-sum(kkc)/sum(kka+kkb+kkc),4)
       }
-      res[res=="NaN"]<-0
+      res[res=="NaN"]<-NA
+      res[res==0.000]<-NA
       sumA<-sum(na.omit(A))
       suma<-sum(na.omit(a))
       sumb<-sum(na.omit(b))
@@ -3411,12 +3530,13 @@ pre.divLowMemory<-function(y){
       res[(x$nloci+1),"Fis_WC"]<-round(1-sumc/(sumb+sumc),4)
       res[(x$nloci+1),"Fst_WC"]<-round(suma/(suma+sumb+sumc),4)
       res[(x$nloci+1),"Fit_WC"]<-round(1-sumc/(suma+sumb+sumc),4)
+      #res[is.na(res)]<-NaN
       list(Fstats=res,
            multiLoc<-res[(x$nloci+1),])
     }
-    if(x$ls==TRUE){
+    if(x$locs==TRUE){
       fstats<-fstWC(x)[[1]]
-    }else if (x$ls==FALSE){
+    }else if (x$locs==FALSE){
       fstats<-fstWC(x)[[2]]
     }        
   }
@@ -3501,6 +3621,7 @@ pre.divLowMemory<-function(y){
   gst_est_max<-(((np-1)*(1-hs_est))/(np-1+hs_est))
   gst_hedrick<-gst/gst_max
   gst_est_hedrick<-gst_est/gst_est_max
+  gst_est_hedrick[gst_est_hedrick > 1] <- 1
   djost_est<-(np/(np-1))*((ht_est-hs_est)/(1 - hs_est))
   
   #end locus stats vectorize####################################################
@@ -3518,13 +3639,16 @@ pre.divLowMemory<-function(y){
   gst_est_all<-round((ht_est_mean-hs_est_mean)/ht_est_mean,4)
   gst_est_all_max<-round((((np-1)*(1-hs_est_mean))/(np-1+hs_est_mean)),4)
   gst_est_all_hedrick<-round(gst_est_all/gst_est_all_max,4)
+  gst_est_all_hedrick[gst_est_all_hedrick > 1] <- 1
   #djost_est_all<-round((np/(np-1))*((ht_est_mean-hs_est_mean)/
   #(1 - hs_est_mean)),4)
   djost_est_all<-round(1/((1/mean(na.omit(djost_est))+(var(na.omit(djost_est))*
     ((1/mean(na.omit(djost_est)))^3)))),4)
+  djost_est[djost_est==0]<-NaN
+  djost[djost==0]<-NaN
   ##############################################################################
   if(fst==TRUE){
-    if(ls==T){  
+    if(locs==T){  
       list(hs=hs,
            hst=hst,
            dst=dst,
@@ -3583,7 +3707,7 @@ pre.divLowMemory<-function(y){
            fstats=fstats)
     }
   } else if(fst==FALSE){
-    if(ls==T){  
+    if(locs==T){  
       list(hs=hs,
            hst=hst,
            dst=dst,
@@ -3645,9 +3769,385 @@ pre.divLowMemory<-function(y){
 # end pre.divLowMemory                                                         #
 ################################################################################
 
-###############################        END        ##############################
-
-
-
-
+#
+#
+#
+#
+#
+#
+#
+#
+#
+################################################################################
+# corPlot, plot the relationship between div.part stats and number of alleles  #
+################################################################################
+corPlot<-function(x,y){
+  x=x
+  y=y
+  par(mfrow=c(2,2))
+  par(mar=c(4,5,2,2))
+  #Fst
+  plot(y[[2]][1:(nrow(y[[2]])-1),8]~x[[16]],
+       pch=16,xlab=expression(N[alleles]),ylab=expression(hat(theta)),
+       ylim=c(0,1),las=1)
+  abline(lm(y[[2]][1:(nrow(y[[2]])-1),8]~x[[16]]),col="red",lwd=2)
+  cor1<-cor.test(y[[2]][1:(nrow(y[[2]])-1),8],x[[16]])
+  text(x=max(x[[16]])/1.5,y=0.8,
+       labels=paste("r = ",round(cor1$estimate[[1]],3),sep=""),cex=2)
+  #gst
+  plot(y[[2]][1:(nrow(y[[2]])-1),4]~x[[16]],pch=16,
+       xlab=expression(N[alleles]),ylab=expression(G[st]),ylim=c(0,1),
+       las=1)
+  abline(lm(y[[2]][1:(nrow(y[[2]])-1),4]~x[[16]]),col="red",lwd=2)
+  cor2<-cor.test(y[[2]][1:(nrow(y[[2]])-1),4],x[[16]])
+  text(x=max(x[[16]])/1.5,y=0.8,
+       labels=paste("r = ",round(cor2$estimate[[1]],3),sep=""),cex=2)
+  #g'st
+  plot(y[[2]][1:(nrow(y[[2]])-1),5]~x[[16]],pch=16,
+       xlab=expression(N[alleles]),ylab=expression("G'"[st]),ylim=c(0,1),
+       las=1)
+  abline(lm(y[[2]][1:(nrow(y[[2]])-1),5]~x[[16]]),col="red",lwd=2)
+  cor3<-cor.test(y[[2]][1:(nrow(y[[2]])-1),5],x[[16]])
+  text(x=max(x[[16]])/1.5,y=0.8,
+       labels=paste("r = ",round(cor3$estimate[[1]],3),sep=""),cex=2)
+  #D
+  plot(y[[2]][1:(nrow(y[[2]])-1),6]~x[[16]],pch=16,
+       xlab=expression(N[alleles]),ylab=expression(D[est]),ylim=c(0,1),
+       las=1)
+  abline(lm(y[[2]][1:(nrow(y[[2]])-1),6]~x[[16]]),col="red",lwd=2)
+  cor4<-cor.test(y[[2]][1:(nrow(y[[2]])-1),6],x[[16]])
+  text(x=max(x[[16]])/1.5,y=0.8,
+       labels=paste("r = ",round(cor4$estimate[[1]],3),sep=""),cex=2)
+}
+################################################################################
+# end corPlot                                                                  #
+################################################################################
+#
+#
+#
+#
+#
+#
+#
+#
+#
+################################################################################
+# difPlot, plot all pairwise population pairs                                  #
+################################################################################
+difPlot <- function (x, outfile= NULL, interactive = FALSE) {
+  x=x
+  on=outfile
+  inta<-interactive
+  #output from div.part
+  require(plotrix)
+  
+  if(is.null(on) == TRUE && inta == TRUE){
+    noter<-"To plot interactively, you need to specifiy a output folder"
+    cat(noter)
+  } else {
+    of=paste(getwd(),"/",on,"-[diveRsity]","/",sep="")
+  }
+  
+  if(!exists("inta",-1)){
+    inta<-FALSE
+  }
+  if(inta == TRUE) {
+    sp.header<-list()
+    colleer<-list()
+    colleer<<-colorRampPalette(c("blue","white"))
+    require(sendplot)
+    direct<-of
+    pwc<-combn(ncol(x[[3]][[1]]),2)
+    pwNames<-paste(colnames(x[[3]][[1]])[pwc[1,]],
+                   colnames(x[[3]][[1]])[pwc[2,]],
+                   sep='vs ')
+                   
+    gst_lab <- as.vector(x[[3]][[4]])
+    gst_lab <- na.omit(gst_lab)
+    collab111<-list()
+    #
+    if(length(x[[3]]) > 6){
+      fst_lab <- as.vector(x[[3]][[8]])
+      fst_lab<-na.omit(fst_lab)
+    }
+    #
+    gpst_lab <- as.vector(x[[3]][[5]])
+    gpst_lab<-na.omit(gpst_lab)
+    #
+    Dest_lab <- as.vector(x[[3]][[6]])
+    Dest_lab<-na.omit(Dest_lab)
+    #
+    
+    fl_ext<-c(".tif","Dot.png","Dot.tif")
+    if (length(x[[3]]) > 6){
+      xy.labels <-  data.frame(pops = pwNames,
+                               Nei_Gst = gst_lab,
+                               Weir_Theta = fst_lab,
+                               Hedrick_Gst = gpst_lab,
+                               Jost_D = Dest_lab)
+    } else {
+      xy.labels <-  data.frame(pop = pwNames,
+                               Nei_Gst = gst_lab,
+                               Hedrick_Gst = gpst_lab,
+                               Jost_D = Dest_lab)
+    }
+    #Nei Gst
+    abx<-list()
+    abx<<-x
+    collab111 <<- c(round(min(gst_lab),3),
+                    round(mean(gst_lab),3),
+                    round(max(gst_lab),3))
+    
+    plot.call <- "image(1:nrow(abx[[3]][[4]]),1:nrow(abx[[3]][[4]]),
+abx[[3]][[4]],ylab='',xlab='',main='Pairwise Gst',xaxt='n',yaxt='n',
+    col = colleer(50),las=1,cex.main=3)"
+  ##
+    plot.extras <- "color.legend(nrow(abx[[3]][[4]])/5,
+                                  nrow(abx[[3]][[4]])/3,
+    nrow(abx[[3]][[4]])/4,
+    nrow(abx[[3]][[4]])/1.2,
+    collab111,
+    rect.col=colleer(50),
+    gradient='y',
+    cex=3)"
+  ##
+    suppressWarnings(imagesend(plot.call=plot.call,
+                               x.pos=pwc[2,],
+                               y.pos=pwc[1,],
+                               xy.type="points",
+                               xy.labels = xy.labels,
+                               plot.extras=plot.extras,
+                               fname.root="Gst_matrix",
+                               dir=of,
+                               image.size="1050x800",
+                               font.size=18,
+                               spot.radius = 10,
+                               font.type = "Arial",
+                               window.size="1100x800"))
+    #clean up
+    unlink(paste(of,"Gst_matrix",fl_ext,sep=""))
+    #
+    #
+    #
+    #
+    #
+    #Fst
+    if(length(x[[3]]) > 6){
+      collab111 <<- c(round(min(fst_lab),3),
+                      round(mean(fst_lab),3),
+                      round(max(fst_lab),3))
+      plot.call <- "image(1:nrow(abx[[3]][[8]]),1:nrow(abx[[3]][[8]]),
+      abx[[3]][[8]],ylab = '',xlab = '',xaxt = 'n',yaxt = 'n',
+      main = 'Pairwise Fst',col = colleer(50),las = 1,cex.main = 3)"
+      ##
+      plot.extras <- "color.legend(nrow(abx[[3]][[8]])/5,
+                                    nrow(abx[[3]][[8]])/3,
+      nrow(abx[[3]][[8]])/4,
+      nrow(abx[[3]][[8]])/1.2,
+      collab111,
+      rect.col=colleer(50),
+      gradient='y',
+      cex=3)"
+      #
+      suppressWarnings(imagesend(plot.call=plot.call,
+                                 x.pos=pwc[2,],
+                                 y.pos=pwc[1,],
+                                 xy.type="points",
+                                 xy.labels = xy.labels,
+                                 plot.extras=plot.extras,
+                                 fname.root="Fst_matrix",
+                                 dir=of,
+                                 image.size="1050x800",
+                                 font.size=18,
+                                 spot.radius = 10,
+                                 font.type ="Arial",
+                                 window.size="1100x800"))
+      #clean up
+      unlink(paste(of,"Fst_matrix",fl_ext,sep=""))
+    }
+    #
+    #
+    #
+    #
+    #
+    #G'st
+    collab111 <<- c(round(min(gpst_lab),3),
+                    round(mean(gpst_lab),3),
+                    round(max(gpst_lab),3))
+    plot.call <- "image(1:nrow(abx[[3]][[5]]),1:nrow(abx[[3]][[5]]),
+    abx[[3]][[5]],ylab='',xlab='',xaxt='n',yaxt='n',
+    main='Pairwise Gst (Hedrick)',col = colleer(50),las=1,cex.main=3)"
+    
+    plot.extras <- "color.legend(nrow(abx[[3]][[5]])/5,nrow(abx[[3]][[5]])/3,
+    nrow(abx[[3]][[5]])/4,nrow(abx[[3]][[5]])/1.2,collab111,
+    rect.col=colleer(50),gradient='y',cex=3)"
+    ##
+    suppressWarnings(imagesend(plot.call=plot.call,
+                               x.pos=pwc[2,],
+                               y.pos=pwc[1,],
+                               xy.type="points",
+                               xy.labels = xy.labels,
+                               plot.extras=plot.extras,
+                               fname.root="G_prime_st_matrix",
+                               dir=of,
+                               image.size="1050x800",
+                               font.size=18,
+                               spot.radius = 10,
+                               font.type = "Arial",
+                               window.size="1100x800"))
+    #clean up
+    unlink(paste(of,"G_prime_st_matrix",fl_ext,sep=""))
+    #
+    #
+    #
+    #
+    #
+    #
+    #Dest
+    collab111 <<- c(round(min(Dest_lab),3),
+                    round(mean(Dest_lab),3),
+                    round(max(Dest_lab),3))
+    plot.call <- "image(1:nrow(abx[[3]][[6]]),1:nrow(abx[[3]][[6]]),
+    abx[[3]][[6]],ylab='',xlab='',xaxt='n',yaxt='n',main='Pairwise D (Jost)',
+    col = colleer(50),las=1,cex.main=3)"
+     plot.extras <- "color.legend(nrow(abx[[3]][[6]])/5,nrow(abx[[3]][[6]])/3,
+     nrow(abx[[3]][[6]])/4,nrow(abx[[3]][[6]])/1.2,collab111,
+     rect.col=colleer(50),gradient='y',cex=3)"
+    ##
+    suppressWarnings(imagesend(plot.call=plot.call,
+                               x.pos=pwc[2,],
+                               y.pos=pwc[1,],
+                               xy.type="points",
+                               xy.labels = xy.labels,
+                               plot.extras=plot.extras,
+                               fname.root="D_matrix_",
+                               dir=of,
+                               image.size="1050x800",
+                               font.size=18,
+                               spot.radius = 10,
+                               font.type = "Arial",
+                               window.size="1100x800"))
+    #lean up
+    
+    unlink(paste(of,"D_matrix_",fl_ext,sep=""))
+    
+  } else {
+    
+    #
+    if(length(x[[3]]) > 6){
+      par(mfrow=c(2,2))
+    } else {
+      par(mfrow=c(3,1))
+    }
+    colleer<-colorRampPalette(c("blue","white"))
+    cols<-colleer(50)
+    #Gst
+    image(1:nrow(x[[3]][[4]]),
+          1:nrow(x[[3]][[4]]),
+          x[[3]][[4]],
+          ylab="population",
+          xlab="population",
+          main="Pairwise Gst",
+          col=cols,
+          las=1)
+    gst<-as.vector(x[[3]][[4]])
+    gst<-as.vector(na.omit(gst))
+    collab111<-c(round(min(gst),3),
+                 round(mean(gst),3),
+                 round(max(gst),3))
+    
+    color.legend(nrow(x[[3]][[4]])/5,
+                 nrow(x[[3]][[4]])/3,
+                 nrow(x[[3]][[4]])/4,
+                 nrow(x[[3]][[4]])/1.2,
+                 collab111,
+                 cols,
+                 gradient="y")
+    if(length(x[[3]]) > 6){
+      #Fst
+      image(1:nrow(x[[3]][[8]]),
+            1:nrow(x[[3]][[8]]),
+            x[[3]][[8]],
+            ylab="population",
+            xlab="population",
+            main="Pairwise Theta",
+            col = cols,
+            las=1)
+      fst<-as.vector(x[[3]][[8]])
+      fst<-as.vector(na.omit(fst))
+      collab111<-c(round(min(fst),3),round(mean(fst),3),round(max(fst),3))
+      
+      color.legend(nrow(x[[3]][[8]])/5,
+                   nrow(x[[3]][[8]])/3,
+                   nrow(x[[3]][[8]])/4,
+                   nrow(x[[3]][[8]])/1.2,
+                   collab111,
+                   cols,
+                   gradient="y")
+    }
+    #Hedrick's Gst
+    image(1:nrow(x[[3]][[5]]),
+          1:nrow(x[[3]][[5]]),
+          x[[3]][[5]],
+          ylab="population",
+          xlab="population",
+          main="Pairwise G'st",
+          col = cols)
+    gprimest<-as.vector(x[[3]][[5]])
+    gprimest<-as.vector(na.omit(gprimest))
+    collab111<-c(round(min(gprimest),3),
+                 round(mean(gprimest),3),
+                 round(max(gprimest),3))
+    
+    color.legend(nrow(x[[3]][[5]])/5,
+                 nrow(x[[3]][[5]])/3,
+                 nrow(x[[3]][[5]])/4,
+                 nrow(x[[3]][[5]])/1.2,
+                 collab111,
+                 cols,
+                 gradient="y")
+    #Jost's D
+    image(1:nrow(x[[3]][[6]]),
+          1:nrow(x[[3]][[6]]),
+          x[[3]][[6]],
+          ylab="population",
+          xlab="population",
+          main="Pairwise Jost's D",
+          col = cols,
+          las=1)
+    D<-as.vector(x[[3]][[6]])
+    D<-as.vector(na.omit(D))
+    collab111<-c(round(min(D),3),
+                 round(mean(D),3),
+                 round(max(D),3))
+    
+    color.legend(nrow(x[[3]][[6]])/5,
+                 nrow(x[[3]][[6]])/3,
+                 nrow(x[[3]][[6]])/4,
+                 nrow(x[[3]][[6]])/1.2,
+                 collab111,
+                 cols,
+                 gradient="y")
+  }
+  if(exists("abx", where=".GlobalEnv")==TRUE){
+    rm(abx, pos=".GlobalEnv")
+  }
+  if(exists("collab111", where=".GlobalEnv")==TRUE){
+    rm(collab111, pos=".GlobalEnv")
+  }
+  if(exists("colleer", where=".GlobalEnv")==TRUE){
+    rm(colleer, pos=".GlobalEnv")
+  }
+  if(exists("sp.header", where=".GlobalEnv")==TRUE){
+    rm(sp.header, pos=".GlobalEnv")
+  }
+}
+################################################################################
+# end dif.Plot                                                                 #
+################################################################################
+#
+#
+#
+################################################################################
+###############################     END ALL       ##############################
 ################################################################################
