@@ -1,4 +1,4 @@
-%\VignetteIndexEntry{diveRsity_v1.3.2_help_}
+%\VignetteIndexEntry{diveRsity_v1.3.6_help_}
 \documentclass{article}
 \begin{document}
 \end{document}

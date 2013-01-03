@@ -2,4 +2,6 @@ export (div.part,
 	in.calc,
 	readGenepop.user,
 	corPlot,
-	difPlot)
+	difPlot,
+	chiCalc,
+	divOnline)
