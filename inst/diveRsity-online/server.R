@@ -2,13 +2,12 @@
 library("shiny")
 library("plotrix")#, lib.loc = "/home/kkeenan/depends/")
 library("diveRsity")#, lib.loc = "/home/kkeenan/depends/")
-library("iterators")#, lib.loc = "/home/kkeenan/depends/")
-library("foreach")#, lib.loc = "/home/kkeenan/depends/")
-library("snow")#, lib.loc = "/home/kkeenan/depends/")
-library("doSNOW")#, lib.loc = "/home/kkeenan/depends/")
-
 
 shinyServer(function(input, output) {
+
+#  pkg_loader <- reactive(function(){
+#    if(input$parallel){
+#    library("doSNOW")
   
   out <- reactive (function(){
     
@@ -16,19 +15,54 @@ shinyServer(function(input, output) {
       
       infile <- input$file$datapath
       
-      div.part(infile = infile,
-               outfile = NULL,
-               gp = input$gp,
-               WC_Fst = input$WC_Fst,
-               bs_locus = input$bs_locus,
-               bs_pairwise = input$bs_pairwise,
-               bootstraps = input$bootstraps,
-               Plot = FALSE,
-               parallel = input$parallel)
-    } #else {
-      #return("No file soecified")
-    #}
+      diveRsity::div.part(infile = infile,
+                          outfile = NULL,
+                          gp = input$gp,
+                          pairwise = input$pairwise,
+                          WC_Fst = input$WC_Fst,
+                          bs_locus = input$bs_locus,
+                          bs_pairwise = input$bs_pairwise,
+                          bootstraps = input$bootstraps,
+                          Plot = FALSE,
+                          parallel = input$parallel)
+    }
   })
+  
+  divBout <- reactive(function(){
+    if(!is.null(input$divBasic)){
+      diveRsity::divBasic(infile = input$file$datapath,
+                          outfile = NULL,
+                          gp = input$gp)
+    }
+  })
+  
+  #############################################################################
+  # divBasic output
+  #############################################################################
+  output$divB <- reactiveTable(function(){
+    if(input$divBasic && !is.null(input$file)){
+      res <- divBout()
+      return(as.data.frame(res$mainTab))
+    }
+  })
+  
+  #############################################################################
+  # Download divBasic results
+  #############################################################################
+  output$divBdl <- downloadHandler(
+    filenames <- function(file){
+      paste("divBasic", Sys.Date(), "-[diveRsity-online].txt", sep = "")
+    },
+    content <- function(file){
+      res <- divBout()
+      outer <- res$mainTab
+      write.table(outer, file, append = FALSE, quote = FALSE,
+                  sep = "\t", eol = "\r\n", row.names = FALSE,
+                  col.names = FALSE)
+    }
+  )
+                  
+  
   
   #############################################################################
   # Standard stats
@@ -41,6 +75,8 @@ shinyServer(function(input, output) {
       #print("No file specified!")
     #}
   })
+  
+  
   
   #Download standard data
   output$dlstd <- downloadHandler(
@@ -94,7 +130,7 @@ shinyServer(function(input, output) {
   # Pairwise matrices
   #############################################################################
   output$pw <- reactiveTable(function(){
-    if(!is.null(input$file)) {
+    if(!is.null(input$file) && input$pairwise) {
       out <- out()
       pw_fix <- lapply(out$pairwise, function(x){
         matrix(x, ncol = ncol(x), nrow = nrow(x))
@@ -337,6 +373,7 @@ shinyServer(function(input, output) {
       y <- div.part(infile = infile,
                     outfile = NULL,
                     gp = input$gp,
+                    pairwise = FALSE,
                     WC_Fst = TRUE,
                     bs_locus = FALSE,
                     bs_pairwise = FALSE,
@@ -416,6 +453,7 @@ shinyServer(function(input, output) {
         y <- div.part(infile = infile,
                       outfile = NULL,
                       gp = input$gp,
+                      pairwise = FALSE,
                       WC_Fst = TRUE,
                       bs_locus = FALSE,
                       bs_pairwise = FALSE,

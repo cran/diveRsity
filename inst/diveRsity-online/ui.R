@@ -16,11 +16,16 @@ shinyUI(pageWithSidebar(
             
     numericInput("gp", "Genepop format", value = 3, min = 2, max = 3, step = 1),
     
+    checkboxInput("pairwise", "Pairwise stats", FALSE),
+    
     checkboxInput("WC_Fst", "Weir & Cockerham Fst", FALSE),
     
     checkboxInput("bs_locus", "Locus Bootstrap", FALSE),
     
     checkboxInput("bs_pairwise", "Pairwise Bootstraps", FALSE),
+    
+    checkboxInput("divBasic", 
+                  "Calculate basic stats (e.g. HWE, allelic richness)", FALSE),
     
     numericInput("bootstraps", "Number of Bootstraps", value = 0, min = 0, 
                  max = 1000, step = 10),
@@ -71,6 +76,8 @@ shinyUI(pageWithSidebar(
                       "RStudio website at"),
              a(href = "http://www.rstudio.com/shiny/", "http://www.rstudio.com/shiny/")                 
     ),
+    tabPanel("divBasic", downloadButton("divBdl", "Download as file"),
+             tableOutput("divB")),
     tabPanel("Standard", downloadButton("dlstd", "Download as file"),
              tableOutput("std")),
     tabPanel("Estimates", downloadButton("dlest", "Download as file"), 

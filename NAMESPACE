@@ -4,4 +4,5 @@ export (div.part,
 	corPlot,
 	difPlot,
 	chiCalc,
-	divOnline)
+	divOnline,
+	divBasic)

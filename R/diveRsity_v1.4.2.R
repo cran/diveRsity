@@ -1,6 +1,6 @@
 ################################################################################
 ################################################################################
-##                              diveRsity v1.3.5                              ##  
+##                              diveRsity v1.4.2                              ##  
 ##                            by Kevin Keenan QUB                             ##  
 ##            An R package for the calculation of differentiation             ##
 ##              statistics and locus informativeness statistics               ##  
@@ -10,8 +10,8 @@
 ################################################################################
 
 # div.part, a wrapper function for the calculation of differentiation stats.
-div.part<-function(infile, outfile = NULL, gp = 3, WC_Fst = FALSE, 
-                   bs_locus = FALSE, bs_pairwise = FALSE, 
+div.part<-function(infile = NULL, outfile = NULL, gp = 3, pairwise = FALSE,
+                   WC_Fst = FALSE, bs_locus = FALSE, bs_pairwise = FALSE, 
                    bootstraps = 0, Plot = FALSE, parallel = FALSE){
   ############################ Argument definitions ############################
   D<-infile
@@ -23,6 +23,7 @@ div.part<-function(infile, outfile = NULL, gp = 3, WC_Fst = FALSE,
   bspw<-bs_pairwise
   plt<-Plot
   para<-parallel
+  pWise <- pairwise
   
   ##############################################################################
   if(bsls==T && bstrps<2){
@@ -615,165 +616,170 @@ div.part<-function(infile, outfile = NULL, gp = 3, WC_Fst = FALSE,
     ################################## Pairwise ################################
     ############################################################################
     # population pair combinations
-    pw<-combn(accDat$npops,2)
-    pwmat<-pw+1
-    #pw data creator
-    ind_vectors<-lapply(1:accDat$npops, function(x){
-      rep(x, accDat$pop_sizes[[x]])}
-    )
-    #      
-    pre_data<-matrix(rep("",((accDat$nloci+1)*(accDat$nloci+1))),
-                     ncol=(accDat$nloci+1))
-    pre_data[1,]<-rep("",(accDat$nloci+1))
-    #
-    for(i in 2:(accDat$nloci+1)){
-      pre_data[i,1]<-accDat$locus_names[(i-1)]
-    }
-    #
-    pw_data<-list()
-    for (i in 1:ncol(pw)){
-      pw_data[[i]]<-data.frame(rbind(pre_data,
-                                     c("POP",as.vector(rep("",accDat$nloci))),
-                                     cbind(ind_vectors[[pw[1,i]]],
-                                           matrix(noquote(accDat$pop_list
-                                                          [[pw[1,i]]]),
-                                                  ncol=accDat$nloci)),
-                                     c("POP",as.vector(rep("",accDat$nloci))),
-                                     cbind(ind_vectors[[pw[2,i]]],
-                                           matrix(noquote(accDat$pop_list
-                                                          [[pw[2,i]]]),
-                                                  ncol=accDat$nloci))))
-    }
-    true_stat_gp_in<-list()
-    if(fst==TRUE){
-      pw_glb<-matrix(rep(0,(9*(ncol(pw)))),ncol=9)
-    } else {
-      pw_glb<-matrix(rep(0,(6*(ncol(pw)))),ncol=6)
-    }
-    for (i in 1:ncol(pw)){
-      true_stat_gp_in[[i]]<-list(infile=pw_data[[i]],gp=gp,bootstrap="FALSE",
-                                 locs="FALSE",fst=fst)
-    }
-    if (para == TRUE && para_pack == FALSE) {
-      true_stat<-parLapply(cl,true_stat_gp_in, pre.divLowMemory)
-      # close core connections if not needed further
-      if (bspw==FALSE){
-        stopCluster(cl)
+    if(pWise | bspw){
+      pw <- combn(accDat$npops,2)
+      pwmat<-pw+1
+      #pw data creator
+      ind_vectors<-lapply(1:accDat$npops, function(x){
+        rep(x, accDat$pop_sizes[[x]])}
+      )
+      #      
+      pre_data<-matrix(rep("",((accDat$nloci+1)*(accDat$nloci+1))),
+                       ncol=(accDat$nloci+1))
+      pre_data[1,]<-rep("",(accDat$nloci+1))
+      #
+      for(i in 2:(accDat$nloci+1)){
+        pre_data[i,1]<-accDat$locus_names[(i-1)]
       }
-    } else {
-      true_stat<-lapply(true_stat_gp_in, pre.divLowMemory)
-    }
-    for(i in 1:ncol(pw)){
+      #
+      pw_data<-list()
+      for (i in 1:ncol(pw)){
+        pw_data[[i]]<-data.frame(rbind(pre_data,
+                                       c("POP",as.vector(rep("",accDat$nloci))),
+                                       cbind(ind_vectors[[pw[1,i]]],
+                                             matrix(noquote(accDat$pop_list
+                                                            [[pw[1,i]]]),
+                                                    ncol=accDat$nloci)),
+                                       c("POP",as.vector(rep("",accDat$nloci))),
+                                       cbind(ind_vectors[[pw[2,i]]],
+                                             matrix(noquote(accDat$pop_list
+                                                            [[pw[2,i]]]),
+                                                    ncol=accDat$nloci))))
+      }
+      true_stat_gp_in<-list()
       if(fst==TRUE){
-        pw_glb[i,]<-c(true_stat[[i]]$gst_all,true_stat[[i]]$gst_all_hedrick,
-                      true_stat[[i]]$djost_all,true_stat[[i]]$gst_est_all,
-                      true_stat[[i]]$gst_est_all_hedrick,
-                      true_stat[[i]]$djost_est_all,
-                      as.numeric(true_stat[[i]]$fstat))
+        pw_glb<-matrix(rep(0,(9*(ncol(pw)))),ncol=9)
       } else {
-        pw_glb[i,]<-c(true_stat[[i]]$gst_all,true_stat[[i]]$gst_all_hedrick,
-                      true_stat[[i]]$djost_all,true_stat[[i]]$gst_est_all,
-                      true_stat[[i]]$gst_est_all_hedrick,
-                      true_stat[[i]]$djost_est_all)
+        pw_glb<-matrix(rep(0,(6*(ncol(pw)))),ncol=6)
+      }
+      for (i in 1:ncol(pw)){
+        true_stat_gp_in[[i]]<-list(infile=pw_data[[i]],gp=gp,bootstrap="FALSE",
+                                   locs="FALSE",fst=fst)
+      }
+      if (para == TRUE && para_pack == FALSE) {
+        true_stat<-parLapply(cl,true_stat_gp_in, pre.divLowMemory)
+        # close core connections if not needed further
+        if (bspw==FALSE){
+          stopCluster(cl)
+        }
+      } else {
+        true_stat<-lapply(true_stat_gp_in, pre.divLowMemory)
+      }
+      for(i in 1:ncol(pw)){
+        if(fst==TRUE){
+          pw_glb[i,]<-c(true_stat[[i]]$gst_all,true_stat[[i]]$gst_all_hedrick,
+                        true_stat[[i]]$djost_all,true_stat[[i]]$gst_est_all,
+                        true_stat[[i]]$gst_est_all_hedrick,
+                        true_stat[[i]]$djost_est_all,
+                        as.numeric(true_stat[[i]]$fstat))
+        } else {
+          pw_glb[i,]<-c(true_stat[[i]]$gst_all,true_stat[[i]]$gst_all_hedrick,
+                        true_stat[[i]]$djost_all,true_stat[[i]]$gst_est_all,
+                        true_stat[[i]]$gst_est_all_hedrick,
+                        true_stat[[i]]$djost_est_all)
+        }
+        
+        true_stat[[i]]<-0
+      }
+      if(fst==TRUE){
+        pwMatList<-lapply(1:9, function(x){
+          noquote(matrix(rep("--",((accDat$npops+1)^2)),ncol=(accDat$npops+1),
+                         nrow=(accDat$npops+1)))
+        })
+      } else {
+        pwMatList<-lapply(1:6, function(x){
+          noquote(matrix(rep("--",((accDat$npops+1)^2)),ncol=(accDat$npops+1),
+                         nrow=(accDat$npops+1)))
+        })
+      }
+      if(fst==TRUE){
+        pwMatListOut<-lapply(1:9, function(x){
+          noquote(matrix(rep(NA,((accDat$npops)^2)),ncol=(accDat$npops),
+                         nrow=(accDat$npops)))
+        })
+      } else {
+        pwMatListOut<-lapply(1:6, function(x){
+          noquote(matrix(rep(NA,((accDat$npops)^2)),ncol=(accDat$npops),
+                         nrow=(accDat$npops)))
+        })
+      }
+      names(pwMatList)<-namer
+      names(pwMatListOut)<-namer
+      #write pw res to matrices
+      pnames<-c("", accDat$pop_names)
+      pnamesOut<-accDat$pop_names
+      if(fst==TRUE){
+        for(i in 1:9){
+          for(j in 1:ncol(pw)){
+            pwMatList[[i]][pwmat[2,j],pwmat[1,j]]<-pw_glb[j,i]
+            pwMatList[[i]][pwmat[1,j],pwmat[2,j]]<-""
+            pwMatListOut[[i]][pw[2,j],pw[1,j]]<-pw_glb[j,i]
+            #pwMatListOut[[i]][pw[1,j],pw[2,j]]<-""
+          }
+          pwMatList[[i]][1,]<-pnames
+          pwMatList[[i]][,1]<-pnames
+          dimnames(pwMatListOut[[i]])<-list(pnamesOut,pnamesOut)
+        }
+      } else {
+        for(i in 1:6){
+          for(j in 1:ncol(pw)){
+            pwMatList[[i]][pwmat[2,j],pwmat[1,j]]<-pw_glb[j,i]
+            pwMatList[[i]][pwmat[1,j],pwmat[2,j]]<-""
+            pwMatListOut[[i]][pw[2,j],pw[1,j]]<-pw_glb[j,i]
+            #pwMatListOut[[i]][pw[1,j],pw[2,j]]<-""
+          }
+          pwMatList[[i]][1,]<-pnames
+          pwMatList[[i]][,1]<-pnames
+          dimnames(pwMatListOut[[i]])<-list(pnamesOut,pnamesOut)
+        }
       }
       
-      true_stat[[i]]<-0
-    }
-    if(fst==TRUE){
-      pwMatList<-lapply(1:9, function(x){
-        noquote(matrix(rep("--",((accDat$npops+1)^2)),ncol=(accDat$npops+1),
-                       nrow=(accDat$npops+1)))
-      })
-    } else {
-      pwMatList<-lapply(1:6, function(x){
-        noquote(matrix(rep("--",((accDat$npops+1)^2)),ncol=(accDat$npops+1),
-                       nrow=(accDat$npops+1)))
-      })
-    }
-    if(fst==TRUE){
-      pwMatListOut<-lapply(1:9, function(x){
-        noquote(matrix(rep(NA,((accDat$npops)^2)),ncol=(accDat$npops),
-                       nrow=(accDat$npops)))
-      })
-    } else {
-      pwMatListOut<-lapply(1:6, function(x){
-        noquote(matrix(rep(NA,((accDat$npops)^2)),ncol=(accDat$npops),
-                       nrow=(accDat$npops)))
-      })
-    }
-    names(pwMatList)<-namer
-    names(pwMatListOut)<-namer
-    #write pw res to matrices
-    pnames<-c("", accDat$pop_names)
-    pnamesOut<-accDat$pop_names
-    if(fst==TRUE){
-      for(i in 1:9){
-        for(j in 1:ncol(pw)){
-          pwMatList[[i]][pwmat[2,j],pwmat[1,j]]<-pw_glb[j,i]
-          pwMatList[[i]][pwmat[1,j],pwmat[2,j]]<-""
-          pwMatListOut[[i]][pw[2,j],pw[1,j]]<-pw_glb[j,i]
-          #pwMatListOut[[i]][pw[1,j],pw[2,j]]<-""
+      
+      # write object create
+      #pnames list
+      
+      pwWrite<-pwMatList[[1]]
+      pwWrite<-rbind(c(names(pwMatList)[1],rep("",accDat$npops)),pwWrite, 
+                     rep("",(accDat$npops+1)))
+      if(fst==TRUE){
+        for(i in 2:9){
+          pwWrite<-rbind(pwWrite,c(names(pwMatList)[i],rep("",accDat$npops)),
+                         pwMatList[[i]],rep("",(accDat$npops+1)))
         }
-        pwMatList[[i]][1,]<-pnames
-        pwMatList[[i]][,1]<-pnames
-        dimnames(pwMatListOut[[i]])<-list(pnamesOut,pnamesOut)
-      }
-    } else {
-      for(i in 1:6){
-        for(j in 1:ncol(pw)){
-          pwMatList[[i]][pwmat[2,j],pwmat[1,j]]<-pw_glb[j,i]
-          pwMatList[[i]][pwmat[1,j],pwmat[2,j]]<-""
-          pwMatListOut[[i]][pw[2,j],pw[1,j]]<-pw_glb[j,i]
-          #pwMatListOut[[i]][pw[1,j],pw[2,j]]<-""
-        }
-        pwMatList[[i]][1,]<-pnames
-        pwMatList[[i]][,1]<-pnames
-        dimnames(pwMatListOut[[i]])<-list(pnamesOut,pnamesOut)
-      }
-    }
-    
-    
-    # write object create
-    #pnames list
-    
-    pwWrite<-pwMatList[[1]]
-    pwWrite<-rbind(c(names(pwMatList)[1],rep("",accDat$npops)),pwWrite, 
-                   rep("",(accDat$npops+1)))
-    if(fst==TRUE){
-      for(i in 2:9){
-        pwWrite<-rbind(pwWrite,c(names(pwMatList)[i],rep("",accDat$npops)),
-                       pwMatList[[i]],rep("",(accDat$npops+1)))
-      }
-    } else {
-      for(i in 2:6){
-        pwWrite<-rbind(pwWrite,c(names(pwMatList)[i],rep("",accDat$npops)),
-                       pwMatList[[i]],rep("",(accDat$npops+1)))
-      }
-    }
-    if(!is.null(on)){
-      if(write_res==TRUE){
-        # write data to excel
-        # Load dependencies
-        # pw stats
-        write.xlsx(pwWrite,file=paste(of,"[div.part].xlsx",sep=""),
-                   sheetName="Pairwise-stats",col.names=F,
-                   row.names=F,append=T)
       } else {
-        # text file alternatives
-        pw_outer<-file(paste(of,"Pairwise-stats[div.part].txt",sep=""), "w")
-        for(i in 1:nrow(pwWrite)){
-          cat(pwWrite[i,],"\n",file=pw_outer,sep="\t")
+        for(i in 2:6){
+          pwWrite<-rbind(pwWrite,c(names(pwMatList)[i],rep("",accDat$npops)),
+                         pwMatList[[i]],rep("",(accDat$npops+1)))
         }
-        close(std)
       }
+      if(!is.null(on)){
+        if(write_res==TRUE){
+          # write data to excel
+          # Load dependencies
+          # pw stats
+          write.xlsx(pwWrite,file=paste(of,"[div.part].xlsx",sep=""),
+                     sheetName="Pairwise-stats",col.names=F,
+                     row.names=F,append=T)
+        } else {
+          # text file alternatives
+          pw_outer<-file(paste(of,"Pairwise-stats[div.part].txt",sep=""), "w")
+          for(i in 1:nrow(pwWrite)){
+            cat(pwWrite[i,],"\n",file=pw_outer,sep="\t")
+          }
+          close(std)
+        }
+      }
+      #cleanup
+      rm("pwWrite")
+      ##
+      zzz<-gc()
+      rm(zzz)
     }
-    #cleanup
-    rm("pwWrite")
-    ##
-    zzz<-gc()
-    rm(zzz)
+      
+    
     #Bootstrap
     if(bspw==TRUE){
+      
       
       # Bootstrap results data object 
       # bs_pw_glb = bootstrap pairwise global stats
@@ -1187,38 +1193,47 @@ div.part<-function(infile, outfile = NULL, gp = 3, WC_Fst = FALSE,
     zzz<-gc()
     rm(zzz)
     
-    # Create mean pairwise values (for Erin Landguth 12/12)
-    meanPairwise <- lapply(pwMatListOut, function(x){
-      mean(x, na.rm = TRUE)
-    })
+    if(pWise | bspw){
+      # Create mean pairwise values (for Erin Landguth 12/12)
+      meanPairwise <- lapply(pwMatListOut, function(x){
+        mean(x, na.rm = TRUE)
+      })
     names(meanPairwise) <- names(pwMatListOut)
+    }
     
     #############################################################################
     #Data for output
-    if(bspw==T && bsls==T){
-      list(standard=ot1out,
-           estimate=ot2out,
-           pairwise=pwMatListOut,
+    if(bspw == TRUE && bsls == TRUE){
+      list(standard = ot1out,
+           estimate = ot2out,
+           pairwise = pwMatListOut,
            meanPairwise = meanPairwise,
-           bs_locus=bs_res1,
-           bs_pairwise=pw_res1)
-    } else if(bspw==T && bsls==F){
-      list(standard=ot1out,
-           estimate=ot2out,
-           pairwise=pwMatListOut,
+           bs_locus = bs_res1,
+           bs_pairwise = pw_res1)
+    } else if(bspw == TRUE && bsls == FALSE){
+      list(standard = ot1out,
+           estimate = ot2out,
+           pairwise = pwMatListOut,
            meanPairwise = meanPairwise,
-           bs_pairwise=pw_res1)
-    } else if(bspw==F && bsls==T){
-      list(standard=ot1out,
-           estimate=ot2out,
-           pairwise=pwMatListOut,
+           bs_pairwise = pw_res1)
+    } else if(bspw == FALSE && bsls == TRUE && pWise == TRUE){
+      list(standard = ot1out,
+           estimate = ot2out,
+           pairwise = pwMatListOut,
            meanPairwise = meanPairwise,
-           bs_locus=bs_res1)
-    } else if(bspw==F && bsls==F){
-      list(standard=ot1out,
-           estimate=ot2out,
-           pairwise=pwMatListOut,
+           bs_locus = bs_res1)
+    } else if(bspw == FALSE && bsls == FALSE && pWise == TRUE){
+      list(standard = ot1out,
+           estimate = ot2out,
+           pairwise = pwMatListOut,
            meanPairwise = meanPairwise)
+    } else if(bspw == FALSE && bsls == TRUE && pWise == FALSE){
+      list(standard = ot1out,
+           estimate = ot2out,
+           bs_locus = bs_res1)
+    } else if(bspw == FALSE && bsls == FALSE && pWise == FALSE){
+      list(standard = ot1out,
+           estimate = ot2out)
     }
   }
 }
@@ -1243,34 +1258,7 @@ readGenepop<- function (x) {
   infile=x$infile
   bootstrap=x$bootstrap
   locs=x$locs
-  if(typeof(infile)=="list"){
-    data1=infile 
-  } else if (typeof(infile)=="character"){
-    no_col <- max(count.fields(infile))
-    suppressWarnings(flth<-length(readLines(infile)))
-    data1<-matrix(NA,ncol=no_col,nrow=flth)
-    datt<-list()
-    for(i in 1:flth){
-      datt[[i]]<-scan(infile,skip=(i-1),nlines=1,fill=T, 
-                      what=list(rep("\t",no_col)),quiet = T)
-      datt[[i]]<-unlist(datt[[i]])
-      if(is.element(",", datt[[i]])==TRUE){
-        datt[[i]]<-datt[[i]][-(which(datt[[i]] == ","))]
-      }
-      if(length(datt[[i]]) < no_col){
-        datt[[i]]<-c(datt[[i]],rep(NA, no_col-length(datt[[i]])))
-      }
-      data1[i,]<-datt[[i]]
-    }
-    if(sum(is.na(data1[ , no_col])) == flth){
-      data1 <- data1[ , -(no_col)]
-    }
-    data1<-as.data.frame(data1)
-    # deal will empty line at the end of a file
-    if(sum(is.na(data1[flth, ])) >= (no_col - 1)){
-      data1 <- data1[-flth, ]
-    }
-  }
+  data1 <- fileReader(infile)
   if(gp == 3){
     data1[data1==0]<-NA
     data1[data1=="999999"]<-NA
@@ -1443,7 +1431,9 @@ readGenepop<- function (x) {
   pa1<-lapply(pop_alleles, parbind)
   #create a function to tabulate the occurance of each allele
   afTab<-function(x){
-    apply(x,2,table)
+    lapply(1:ncol(x), function(i){
+      return(table(x[,i]))
+    })
   }
   actab<-lapply(pa1, afTab)
   
@@ -2413,39 +2403,12 @@ in.bs<-function(x){
   BS=x[[3]]
   NBS=x[[4]]
   pw_only=x[[5]]
-  readGenepop<- function (x) {
+  readGenepop <- function (x) {
     gp=x$gp
     infile=x$infile
     bootstrap=x$bootstrap
     locs=x$locs
-    if(typeof(infile)=="list"){
-      data1=infile 
-    } else if (typeof(infile)=="character"){
-      no_col <- max(count.fields(infile))
-      suppressWarnings(flth<-length(readLines(infile)))
-      data1<-matrix(NA,ncol=no_col,nrow=flth)
-      datt<-list()
-      for(i in 1:flth){
-        datt[[i]]<-scan(infile,skip=(i-1),nlines=1,fill=T, 
-                        what=list(rep("\t",no_col)),quiet = T)
-        datt[[i]]<-unlist(datt[[i]])
-        if(is.element(",", datt[[i]])==TRUE){
-          datt[[i]]<-datt[[i]][-(which(datt[[i]] == ","))]
-        }
-        if(length(datt[[i]]) < no_col){
-          datt[[i]]<-c(datt[[i]],rep(NA, no_col-length(datt[[i]])))
-        }
-        data1[i,]<-datt[[i]]
-      }
-      if(sum(is.na(data1[ , no_col])) == flth){
-        data1 <- data1[ , -(no_col)]
-      }
-      data1<-as.data.frame(data1)
-      # deal will empty line at the end of a file
-      if(sum(is.na(data1[flth, ])) >= (no_col - 1)){
-        data1 <- data1[-flth, ]
-      }
-    }
+    data1 <- fileReader(infile)
     if(gp == 3){
       data1[data1==0]<-NA
       data1[data1=="999999"]<-NA
@@ -2605,7 +2568,9 @@ in.bs<-function(x){
     pa1<-lapply(pop_alleles, parbind)
     #create a function to tabulate the occurance of each allele
     afTab<-function(x){
-      apply(x,2,table)
+      lapply(1:ncol(x), function(i){
+        return(table(x[,i]))
+      })
     }
     actab<-lapply(pa1, afTab)
     
@@ -2890,9 +2855,6 @@ in.bs<-function(x){
 ################################################################################
 # in.bs end                                                                    #
 ################################################################################
-################################################################################
-# div.part end                                                                 #
-################################################################################
 #
 #
 #
@@ -2909,35 +2871,7 @@ readGenepop.user<- function (infile=NULL, gp=3, bootstrap=FALSE) {
   gp=gp
   infile=infile
   bootstrap=bootstrap
-  #locs=locs
-  if(typeof(infile)=="list"){
-    data1=infile 
-  } else if (typeof(infile)=="character"){
-    no_col <- max(count.fields(infile))
-    suppressWarnings(flth<-length(readLines(infile)))
-    data1<-matrix(NA,ncol=no_col,nrow=flth)
-    datt<-list()
-    for(i in 1:flth){
-      datt[[i]]<-scan(infile,skip=(i-1),nlines=1,fill=T, 
-                      what=list(rep("\t",no_col)),quiet = T)
-      datt[[i]]<-unlist(datt[[i]])
-      if(is.element(",", datt[[i]])==TRUE){
-        datt[[i]]<-datt[[i]][-(which(datt[[i]] == ","))]
-      }
-      if(length(datt[[i]]) < no_col){
-        datt[[i]]<-c(datt[[i]],rep(NA, no_col-length(datt[[i]])))
-      }
-      data1[i,]<-datt[[i]]
-    }
-    if(sum(is.na(data1[ , no_col])) == flth){
-      data1 <- data1[ , -(no_col)]
-    }
-    data1<-as.data.frame(data1)
-    # deal will empty line at the end of a file
-    if(sum(is.na(data1[flth, ])) >= (no_col - 1)){
-      data1 <- data1[-flth, ]
-    }
-  }
+  data1 <- fileReader(infile)
   if(gp == 3){
     data1[data1==0]<-NA
     data1[data1=="999999"]<-NA
@@ -3116,7 +3050,9 @@ readGenepop.user<- function (infile=NULL, gp=3, bootstrap=FALSE) {
   pa1<-lapply(pop_alleles, parbind)
   #create a function to tabulate the occurance of each allele
   afTab<-function(x){
-    apply(x,2,table)
+    lapply(1:ncol(x), function(i){
+      return(table(x[,i]))
+    })
   }
   actab<-lapply(pa1, afTab)
   
@@ -3242,41 +3178,13 @@ readGenepop.user<- function (infile=NULL, gp=3, bootstrap=FALSE) {
 ################################################################################
 pre.divLowMemory<-function(y){
   y<-y
-  ##############################################################################
   readGenepopX<- function (x) {
     gp=x$gp
     infile=x$infile
     bootstrap=x$bootstrap
     locs=x$locs
     fst=x$fst
-    if(typeof(infile)=="list"){
-      data1=infile 
-    } else if (typeof(infile)=="character"){
-      no_col <- max(count.fields(infile))
-      suppressWarnings(flth<-length(readLines(infile)))
-      data1<-matrix(NA,ncol=no_col,nrow=flth)
-      datt<-list()
-      for(i in 1:flth){
-        datt[[i]]<-scan(infile,skip=(i-1),nlines=1,fill=T, 
-                        what=list(rep("\t",no_col)),quiet = T)
-        datt[[i]]<-unlist(datt[[i]])
-        if(is.element(",", datt[[i]])==TRUE){
-          datt[[i]]<-datt[[i]][-(which(datt[[i]] == ","))]
-        }
-        if(length(datt[[i]]) < no_col){
-          datt[[i]]<-c(datt[[i]],rep(NA, no_col-length(datt[[i]])))
-        }
-        data1[i,]<-datt[[i]]
-      }
-      if(sum(is.na(data1[ , no_col])) == flth){
-        data1 <- data1[ , -(no_col)]
-      }
-      data1<-as.data.frame(data1)
-      # deal will empty line at the end of a file
-      if(sum(is.na(data1[flth, ])) >= (no_col - 1)){
-        data1 <- data1[-flth, ]
-      }
-    }
+    data1 <- fileReader(infile)
     if(gp == 3){
       data1[data1==0]<-NA
       data1[data1=="999999"]<-NA
@@ -3293,10 +3201,9 @@ pre.divLowMemory<-function(y){
                     which(data1[,1]=="pop")))
     pop_pos<- c(which(data1[,1]=="POP"),which(data1[,1]=="Pop"),
                 which(data1[,1]=="pop"),(nrow(data1)+1))
-    pop_sizes<-vector()
-    for(i in 1:npops){
-      pop_sizes[i]<- pop_pos[(i+1)] - pop_pos[i]-1
-    }
+    pop_sizes <- sapply(1:npops, function(i){
+      pop_pos[(i+1)] - pop_pos[i]-1
+    })
     pop_names<-substr(data1[(pop_pos[1:npops]+1),1],1,10)
     pop_weights<- 1/pop_sizes
     
@@ -3309,11 +3216,10 @@ pre.divLowMemory<-function(y){
       stop("Check your input file for formatting errors!")
     }
     loci_names<-as.vector(data1[2:(pop_pos[1]-1),1])
-    pop_list<-list()
-    for (i in 1:npops){
-      pop_list[[i]]<-as.matrix(data1[(pop_pos[i]+1):(pop_pos[(i+1)]-1),
-                                     2:(nloci+1)])
-    }
+    pop_list <- lapply(1:npops, function(i){
+      return(as.matrix(data1[(pop_pos[i]+1):(pop_pos[(i+1)]-1),
+                             2:(nloci+1)]))
+    })
     # check if all populations have at least some data at loci
     extCheck <- sapply(1:length(pop_list), function(i){
       sum(is.na(pop_list[[i]])) == nloci * pop_sizes[i]
@@ -3337,11 +3243,13 @@ pre.divLowMemory<-function(y){
     
     if (gp==3) {
       plMake<-function(x){
-        suppressWarnings(return(matrix(sprintf("%06g",as.numeric(x)),nrow=nrow(x),ncol=ncol(x))))
+        suppressWarnings(return(matrix(sprintf("%06g",as.numeric(x)),
+                                       nrow=nrow(x),ncol=ncol(x))))
       }
     } else if (gp==2) {
       plMake<-function(x){
-        suppressWarnings(return(matrix(sprintf("%04g",as.numeric(x)),nrow=nrow(x),ncol=ncol(x))))
+        suppressWarnings(return(matrix(sprintf("%04g",as.numeric(x)),
+                                       nrow=nrow(x),ncol=ncol(x))))
       }
     }
     pop_list<-lapply(pop_list, plMake)
@@ -3409,22 +3317,18 @@ pre.divLowMemory<-function(y){
     
     #vectorize allele_names#######################################################
     
-    alln<-function(x){ # where x is the object pop_alleles (returned by pl_ss())
-      res<-list()
-      for(i in 1:ncol(x[[1]])){
-        res[i]<-list(sort(unique(c(x[[1]][,i],x[[2]][,i])),decreasing=F))
-      }
-      return(res)
+    alln <- function(x){
+      res <- sapply(1:ncol(x[[1]]), function(i){
+        list(sort(unique(c(x[[1]][,i],x[[2]][,i])),decreasing=F))
+      })
     }
+    allele_names <- sapply(pop_alleles,alln)
     
-    allele_names<-lapply(pop_alleles,alln)
     
-    
-    loci_combi<-allele_names[[1]]
-    for(j in 1:nloci){
-      for(i in 2:npops){
-        loci_combi[[j]]<-c(loci_combi[[j]],allele_names[[i]][[j]])
-      }
+    if(npops == 1){
+      loci_combi <- allele_names[,1]
+    } else {
+      loci_combi <- apply(allele_names, 1, FUN = 'unlist')
     }
     
     #all_alleles vectorized#######################################################
@@ -3438,45 +3342,48 @@ pre.divLowMemory<-function(y){
     
     aa<-all_alleles
     aa<-lapply(aa, FUN=`list`, npops)
-    afMatrix<-function(x){
-      np<-x[[2]]
-      z<-matrix(rep(0,(np*length(x[[1]]))),ncol=np, nrow=length(x[[1]]))
-      rownames(z)<-x[[1]]
-      return(z)
-    }
-    allele_freq<-lapply(aa,afMatrix)
+    allele_freq <- lapply(1:ncol(pop_list[[1]]), function(i){
+      Nrow <- length(all_alleles[[i]])
+      Ncol <- length(pop_list)
+      mat <- matrix(rep(0,(Ncol * Nrow)), ncol = Ncol)
+      rownames(mat) <- all_alleles[[i]]
+      return(mat)
+    })
     
     
     #combine pop_alleles
-    parbind<-function(x){
+    pa1 <- lapply(pop_alleles, function(x){
       rbind(x[[1]],x[[2]])
-    }
-    pa1<-lapply(pop_alleles, parbind)
-    #create a function to tabulate the occurance of each allele
-    afTab<-function(x){
-      apply(x,2,table)
-    }
-    actab<-lapply(pa1, afTab)
+    })
+    # Count alleles
+    actab <- lapply(pa1, function(x){
+      lapply(1:ncol(x), function(i){
+        table(x[,i])
+      })
+    })
     
-    afs<-function(x){
-      afsint<-function(y){
+    # Count the number of individuals typed per locus per pop
+    indtyppop <- lapply(pa1, function(x){
+      apply(x, 2, function(y){
         length(na.omit(y))/2
-      }
-      apply(x,2,afsint)
-    }
-    indtyppop<-lapply(pa1,afs)
+      })
+    })
     #calculate allele frequencies
-    afCalcpop<-lapply(1:length(actab), function(x){
-      lapply(1:length(actab[[x]]),function(y){
+    afCalcpop<-sapply(1:length(actab), function(x){
+      sapply(1:length(actab[[x]]),function(y){
         actab[[x]][[y]]/(indtyppop[[x]][y]*2)
       })
     })
-    #assign allele freqs to frequency matrices
-    obs_count<-allele_freq
-    for(i in 1:npops){
-      for(j in 1:nloci){
-        allele_freq[[j]][allele_names[[i]][[j]],i]<-afCalcpop[[i]][[j]]
-        obs_count[[j]][names(actab[[i]][[j]]),i]<-actab[[i]][[j]]
+    preFreq <- lapply(1:nrow(afCalcpop), function(i){
+      lapply(1:ncol(afCalcpop), function(j){
+        afCalcpop[i,j][[1]]
+      })
+    })
+    rm(afCalcpop)  # remove afCalcpop
+    # Assign allele frequencies per locus
+    for(i in 1:nloci){
+      for(j in 1:npops){
+        allele_freq[[i]][names(preFreq[[i]][[j]]), j] <- preFreq[[i]][[j]]
       }
     }
     
@@ -3491,36 +3398,7 @@ pre.divLowMemory<-function(y){
         indtyp[[j]][i]<-indtyppop[[i]][j]
       }
     }
-    
-    if(bootstrap==T){
-      ind_vectors<-list()
-      for(i in 1:npops){
-        ind_vectors[[i]]<-noquote(paste(rep(i,pop_sizes[i]),",",sep=""))
-      }
-      
-      
-      pre_data<-matrix(rep("\t",((nloci+1)*(nloci+1))),
-                       ncol=(nloci+1))
-      pre_data[1,]<-c("Title",rep("\t",nloci))
-      for(i in 2:(nloci+1)){
-        pre_data[i,1]<-loci_names[(i-1)]
-      }
-      pop_data<-list()
-      for(i in 1:npops){
-        pop_data[[i]]<-matrix(rbind(c("POP",as.vector(rep("\t",nloci))),
-                                    cbind(ind_vectors[[i]],pop_list[[i]])),
-                              ncol=(nloci+1))
-      }
-      bs_data_file<-matrix(rbind(pre_data,pop_data[[1]]),ncol=(nloci+1))
-      for(i in 2:npops){
-        bs_data_file<-matrix(rbind(bs_data_file,pop_data[[i]]),ncol=(nloci+1))
-      }
-      bs_data_file<-data.frame(bs_data_file)
-    }
-    nalleles<-vector()
-    for(i in 1:nloci){
-      nalleles[i]<- nrow(allele_freq[[i]])
-    }
+    nalleles <- sapply(allele_freq, FUN = "nrow")
     ##############################################################################
     if(bootstrap==T){
       list(npops=npops, 
@@ -3541,7 +3419,7 @@ pre.divLowMemory<-function(y){
            nalleles=nalleles,
            locs=locs,
            #bs_file=bs_data_file,
-           obs_allele_num=obs_count,
+           #obs_allele_num=obs_count,
            fst=fst,
            gp=gp)
     } else if(bootstrap==F){
@@ -3562,33 +3440,44 @@ pre.divLowMemory<-function(y){
            indtyp=indtyp,
            nalleles=nalleles,
            locs=locs,
-           obs_allele_num=obs_count,
+           #obs_allele_num=obs_count,
            fst=fst,
            gp=gp)
     }
   }
   x<-readGenepopX(y)
-  data1<-x #x is a readGenepop out object
+  data1 <- x #x is a readGenepop out object
   locs<-x$locs
   fst=x$fst
   ##############################################################################
   #fstWC define
   if(fst==TRUE){
     fstWC<-function(x){
-      badData<-vector()
-      for(i in 1:x$nloci){
-        badData[i]<-is.element(0, x$indtyp[[i]])
+      badData <- sapply(x$indtyp, function(y){
+        is.element(0, y)
+      })
+      if(sum(badData) > 0){
+        nl <- x$nloci - (sum(badData))
+      } else{
+        nl <- x$nloci
       }
-      if(length(badData)>0){
-        nl<-x$nloci-length(badData)
+      gdData<-which(!badData)
+      badData<-which(badData)
+      if (nl == 1) {
+        all_genot<-x$pop_list[[1]][,gdData]
+        if(x$npops > 1){
+          for(i in 2:x$npops){
+            all_genot <- c(all_genot, x$pop_list[[i]][,gdData])
+          }
+        }
+        all_genot <- matrix(all_genot, ncol = 1)
       } else {
-        nl<-x$nloci
-      }
-      gdData<-which(badData==FALSE)
-      badData<-which(badData==TRUE)
-      all_genot<-x$pop_list[[1]][,gdData]
-      for(i in 2:x$npops){
-        all_genot<-rbind(all_genot,x$pop_list[[i]][,gdData])
+        all_genot<-matrix(x$pop_list[[1]][,gdData], ncol = length(gdData))
+        if(x$npops > 1){
+          for(i in 2:x$npops){
+            all_genot<-rbind(all_genot, x$pop_list[[i]][,gdData])
+          }
+        }
       }
       genot<-apply(all_genot,2,unique)
       genot<-lapply(genot, function(x){
@@ -3606,7 +3495,7 @@ pre.divLowMemory<-function(y){
       for(i in 1:ncol(all_genot)){
         genoCount[[i]]<-matrix(0,ncol=length(genot[[i]]))
         for(j in 1:length(genot[[i]])){
-          genoCount[[i]][,j]<-length(which(all_genot[,i]==genot[[i]][j]))
+          genoCount[[i]][,j]<-length(which(all_genot[,i] == genot[[i]][j]))
         }
         if (x$gp==3){
           colnames(genoCount[[i]])<-paste(substr(genot[[i]],1,3),"/",
@@ -3616,6 +3505,7 @@ pre.divLowMemory<-function(y){
                                           substr(genot[[i]],3,4),sep="")
         }
       }
+      
       h_sum<-list()
       for(i in 1:ncol(all_genot)){
         h_sum[[i]]<-vector()
@@ -3629,17 +3519,17 @@ pre.divLowMemory<-function(y){
         }
       }
       indtyp_tot<-lapply(x$indtyp, sum)
-      kk_hsum<-list()
-      for(i in 1:ncol(all_genot)){
-        kk_hsum[[i]]<-list(h_sum[[i]],indtyp_tot[[gdData[i]]])
-      }
+      kk_hsum <- lapply(1:ncol(all_genot), function(i){
+        list(h_sum[[i]], indtyp_tot[[gdData[i]]])
+      })
       kk_hbar<-lapply(kk_hsum, function(x){
         return(x[[1]]/x[[2]])
       })
-      pdat<-list()
-      for(i in 1:ncol(all_genot)){
-        pdat[[i]]<-list(x$allele_freq[[gdData[i]]],x$indtyp[[gdData[i]]])
-      }
+      
+      pdat <- lapply(1:ncol(all_genot), function(i){
+        list(x$allele_freq[[gdData[i]]], x$indtyp[[gdData[i]]])
+      })
+      
       kk_p<-lapply(pdat, function(x){
         if(is.null(x[[1]])==FALSE){
           apply(x[[1]], 1, function(y){
@@ -3657,12 +3547,12 @@ pre.divLowMemory<-function(y){
       for(i in 1:ncol(all_genot)){
         kknbar<-indtyp_tot[[gdData[i]]]/x$npops
         kknC<-(indtyp_tot[[gdData[i]]]-sum(x$indtyp[[gdData[i]]]^2)/
-               indtyp_tot[[gdData[i]]])/(x$npops-1)
+                 indtyp_tot[[gdData[i]]])/(x$npops-1)
         kkptild<-kk_p[[i]]/(2*x$indtyp[[gdData[i]]])
         kkptild[kkptild=="NaN"]<-NA
         kkpbar<-colSums(kk_p[[i]])/(2*indtyp_tot[[gdData[i]]])
         kks2<-colSums(x$indtyp[[gdData[i]]]*
-          (kkptild-rep(kkpbar,each = x$npops))^2)/((x$npops-1)*kknbar)
+                        (kkptild-rep(kkpbar,each = x$npops))^2)/((x$npops-1)*kknbar)
         kkA<-kkpbar*(1-kkpbar)-(x$npops-1)*kks2/x$npops
         kka<-kknbar*(kks2-(kkA-(kk_hbar[[i]]/4))/(kknbar-1))/kknC
         kkb<-kknbar*(kkA-(2*(kknbar-1))*kk_hbar[[i]]/(4*kknbar))/(kknbar-1)
@@ -3736,11 +3626,13 @@ pre.divLowMemory<-function(y){
   #end observed heterozygosity count vectorize##################################
   #exhmf & exhtf vectorize######################################################
   
-  square<-function(x){x^2}
-  exhmf<-lapply(af, square)
-  exhtf<-do.call("rbind",lapply(exhmf,function(x){
-    1-colSums(x)  
-  }))
+  # calculate Heterozygosity exp
+  tsapply <- function(...){t(sapply(...))}
+  exhtf <- tsapply(af, function(x){
+    apply(x, 2, function(y){
+      1 - (sum(y^2))
+    })
+  })
   
   #end exhmf & exhtf vectorize##################################################
   #mean frequency vectorize#####################################################
@@ -3748,9 +3640,8 @@ pre.divLowMemory<-function(y){
   mf<-lapply(af,function(x){
     rowSums(x)/np  
   })
-  mexhmf<-lapply(mf,square)
-  ht<-sapply(mexhmf, function(x){
-    1-sum(x)
+  ht<-sapply(mf, function(x){
+    1- sum(x^2)
   })
   ht[ht=="NaN"]<-NA
   
@@ -3796,8 +3687,12 @@ pre.divLowMemory<-function(y){
   gst_est_all_hedrick[gst_est_all_hedrick > 1] <- 1
   #djost_est_all<-round((np/(np-1))*((ht_est_mean-hs_est_mean)/
   #(1 - hs_est_mean)),4)
-  djost_est_all<-round(1/((1/mean(na.omit(djost_est))+(var(na.omit(djost_est))*
-    ((1/mean(na.omit(djost_est)))^3)))),4)
+  if (nl == 1){
+    djost_est_all <- round(djost_est,4)
+  } else {
+    djost_est_all<-round(1/((1/mean(na.omit(djost_est))+(var(na.omit(djost_est))*
+                                                           ((1/mean(na.omit(djost_est)))^3)))),4)
+  }
   djost_est[djost_est==0]<-NaN
   djost[djost==0]<-NaN
   ##############################################################################
@@ -4340,35 +4235,7 @@ chiCalc <- function(infile = NULL, outfile = NULL, gp = 3, minFreq = NULL){
     gp=x$gp
     infile=x$infile
     bootstrap=x$bootstrap
-    #locs=x$locs
-    if(typeof(infile)=="list"){
-      data1=infile 
-    } else if (typeof(infile)=="character"){
-      no_col <- max(count.fields(infile))
-      suppressWarnings(flth<-length(readLines(infile)))
-      data1<-matrix(NA,ncol=no_col,nrow=flth)
-      datt<-list()
-      for(i in 1:flth){
-        datt[[i]]<-scan(infile,skip=(i-1),nlines=1,fill=T, 
-                        what=list(rep("\t",no_col)),quiet = T)
-        datt[[i]]<-unlist(datt[[i]])
-        if(is.element(",", datt[[i]])==TRUE){
-          datt[[i]]<-datt[[i]][-(which(datt[[i]] == ","))]
-        }
-        if(length(datt[[i]]) < no_col){
-          datt[[i]]<-c(datt[[i]],rep(NA, no_col-length(datt[[i]])))
-        }
-        data1[i,]<-datt[[i]]
-      }
-      if(sum(is.na(data1[ , no_col])) == flth){
-        data1 <- data1[ , -(no_col)]
-      }
-      data1<-as.data.frame(data1)
-      # deal will empty line at the end of a file
-      if(sum(is.na(data1[flth, ])) >= (no_col - 1)){
-        data1 <- data1[-flth, ]
-      }
-    }
+    data1 <- fileReader(infile)
     if(gp == 3){
       data1[data1==0]<-NA
       data1[data1=="999999"]<-NA
@@ -4539,7 +4406,9 @@ chiCalc <- function(infile = NULL, outfile = NULL, gp = 3, minFreq = NULL){
     pa1<-lapply(pop_alleles, parbind)
     #create a function to tabulate the occurance of each allele
     afTab<-function(x){
-      apply(x,2,table)
+      lapply(1:ncol(x), function(i){
+        return(table(x[,i]))
+      })
     }
     actab<-lapply(pa1, afTab)
     
@@ -4837,8 +4706,445 @@ chiCalc <- function(infile = NULL, outfile = NULL, gp = 3, minFreq = NULL){
 divOnline <- function(){
     shiny::runApp(system.file('diveRsity-online', package = 'diveRsity'))
 }
-###############################################################################
+################################################################################
 # END
 ################################################################################
-###############################     END ALL       ##############################
+#
+#
+#
+#
 ################################################################################
+# Calculate basic stats
+################################################################################
+
+################################################################################
+# END divBasic
+################################################################################
+#
+#
+#
+#
+#
+divBasic <- function (infile = NULL, outfile = NULL, gp = 3) {
+  infile =  infile
+  gp = gp
+  on = outfile
+  data1 <- fileReader(infile)
+  data1[data1==0]<-NA;data1[data1=="999999"]<-NA;data1[data1=="000000"]<-NA
+  #raw_data<-data1
+  npops<-length(c(which(data1[,1]=="Pop"),which(data1[,1]=="POP"),
+                  which(data1[,1]=="pop")))
+  pop_pos<- c(which(data1[,1]=="POP"),which(data1[,1]=="Pop"),
+              which(data1[,1]=="pop"),(nrow(data1)+1))
+  pop_sizes <- sapply(1:npops, function(i){
+    pop_pos[(i+1)] - pop_pos[i]-1
+  })
+  minSize <- min(pop_sizes) 
+  pop_names<-substr(data1[(pop_pos[1:npops]+1),1],1,10)
+  nloci<- (pop_pos[1]-2)
+  loci_names<-as.vector(data1[2:(pop_pos[1]-1),1])
+  pop_list <- lapply(1:npops, function(i){
+    return(as.matrix(data1[(pop_pos[i]+1):(pop_pos[(i+1)]-1),
+                           2:(nloci+1)]))
+  })
+  if (gp==3) {
+    plMake<-function(x){
+      suppressWarnings(return(matrix(sprintf("%06g",as.numeric(x)),
+                                     nrow=nrow(x),ncol=ncol(x))))
+    }
+  } else if (gp==2) {
+    plMake<-function(x){
+      suppressWarnings(return(matrix(sprintf("%04g",as.numeric(x)),
+                                     nrow=nrow(x),ncol=ncol(x))))
+    }
+  }
+  pop_list<-lapply(pop_list, plMake)
+  if (gp == 3){
+    for(i in 1:npops){
+      pop_list[[i]][pop_list[[i]] == "    NA"]<-NA
+    }
+  } else if (gp == 2){
+    for(i in 1:npops){
+      pop_list[[i]][pop_list[[i]] == "  NA"] <-NA
+    }
+  }
+  
+  
+  # define a function for calculating allelic richness 
+  AR <- function(pop_list){
+    
+    bser<-function(x){
+      return(matrix(x[sample(nrow(x), minSize, replace = TRUE), ],ncol=ncol(x)))
+    }
+    
+    pop_list<-lapply(pop_list, bser)
+    
+    if (gp==3){
+      pl_ss<-function(x){  # where x is object pop_list
+        pl<-list()
+        pl[[1]]<-matrix(substr(x,1,3),ncol=nloci)
+        pl[[2]]<-matrix(substr(x,4,6),ncol=nloci)
+        return(pl)
+      }
+    } else {
+      pl_ss<-function(x){  # where x is object pop_list
+        pl<-list()
+        pl[[1]]<-matrix(substr(x,1,2),ncol=nloci)
+        pl[[2]]<-matrix(substr(x,3,4),ncol=nloci)
+        return(pl)
+      }
+    }
+    pop_alleles<-lapply(pop_list,pl_ss)
+    alln<-function(x){ # where x is the object pop_alleles (returned by pl_ss())
+      res<-list()
+      for(i in 1:ncol(x[[1]])){
+        res[i]<-list(sort(unique(c(x[[1]][,i],x[[2]][,i])),decreasing=F))
+      }
+      return(res)
+    }
+    allele_names<-lapply(pop_alleles,alln)
+    Alls <- lapply(allele_names, function(x){
+      sapply(x, function(y){
+        length(y)
+      })
+    })
+    nAlls <- matrix(unlist(Alls), ncol = npops)
+    
+    return(nAlls)
+  }
+  ############################# END AR function ###############################
+  # Calculate allelic richness
+  
+  ARdata <- replicate(1000, AR(pop_list))
+  
+  AR <- apply(ARdata, 2, function(x){
+    round(rowMeans(x), 2)
+  })
+  ###vectorize loci_pop_sizes#################################################
+  lps<-function(x){#
+    lsp_count<-as.vector(colSums(!is.na(x)))#
+    return(lsp_count)#
+  }#
+  locPopSize <- sapply(pop_list,lps)
+  ###vectorize pop_alleles####################################################
+  if (gp==3){
+    pl_ss<-function(x){  # where x is object pop_list
+      pl<-list()
+      pl[[1]]<-matrix(substr(x,1,3),ncol=nloci)
+      pl[[2]]<-matrix(substr(x,4,6),ncol=nloci)
+      return(pl)
+    }
+  } else {
+    pl_ss<-function(x){  # where x is object pop_list
+      pl<-list()
+      pl[[1]]<-matrix(substr(x,1,2),ncol=nloci)
+      pl[[2]]<-matrix(substr(x,3,4),ncol=nloci)
+      return(pl)
+    }
+  }
+  pop_alleles<-lapply(pop_list,pl_ss)
+  #end vectorize pop_alleles##################################################
+  #vectorize allele_names#####################################################
+  pop_alleles<-lapply(pop_list,pl_ss)
+  # calcluate the observed heterozygosity
+  ohcFUN<-function(x){
+    lapply(1:ncol(x[[1]]), function(y){
+      (x[[1]][,y]!=x[[2]][,y])*1 #multiply by 1 to conver logical to numeric
+    })
+  }
+  ohc_data<-lapply(pop_alleles, ohcFUN)
+  ohcConvert<-function(x){
+    matrix(unlist(x),nrow=length(x[[1]]))
+  }
+  ohc<-lapply(ohc_data,ohcConvert)
+  rm(ohc_data)
+  hetObs <- sapply(ohc, function(x){
+    apply(x, 2, function(y){
+      sum(na.omit(y))/length(na.omit(y))
+    })
+  })
+  # End
+  alln <- function(x){ # where x is the object pop_alleles (returned by pl_ss())
+    res <- sapply(1:ncol(x[[1]]), function(i){
+      list(sort(unique(c(x[[1]][,i],x[[2]][,i])),decreasing=F))
+    })
+  }
+  allele_names<-sapply(pop_alleles,alln)
+  # Count the number of alleles observed in each population sample per locus
+  obsAlls <- apply(allele_names, 2, function(x){
+    sapply(x, function(y){
+      length(y)
+    })
+  })
+  # Calculate expected He
+  if(npops == 1){
+    loci_combi <- allele_names[,1]
+  } else {
+    loci_combi <- apply(allele_names, 1, FUN = 'unlist')
+  }
+  aaList<-function(x){
+    return(sort(unique(x,decreasing=FALSE)))
+  }
+  all_alleles<-lapply(loci_combi,aaList)
+  # Create allele frequency holders
+  allele_freq <- lapply(1:ncol(pop_list[[1]]), function(i){
+    Nrow <- length(all_alleles[[i]])
+    Ncol <- length(pop_list)
+    mat <- matrix(rep(0,(Ncol * Nrow)), ncol = Ncol)
+    rownames(mat) <- all_alleles[[i]]
+    return(mat)
+  })
+  # rbind pop_alleles
+  pa1 <- lapply(pop_alleles, function(x){
+    rbind(x[[1]],x[[2]])
+  })
+  
+  # Count alleles
+  actab <- lapply(pa1, function(x){
+    lapply(1:ncol(x), function(i){
+      table(x[,i])
+    })
+  })
+  # Count the number of individuals typed per locus per pop
+  indtyppop <- lapply(pa1, function(x){
+    apply(x, 2, function(y){
+      length(na.omit(y))/2
+    })
+  })
+  #calculate allele frequencies
+  afCalcpop<-sapply(1:length(actab), function(x){
+    sapply(1:length(actab[[x]]),function(y){
+      actab[[x]][[y]]/(indtyppop[[x]][y]*2)
+    })
+  })
+  preFreq <- lapply(1:nrow(afCalcpop), function(i){
+    lapply(1:ncol(afCalcpop), function(j){
+      afCalcpop[i,j][[1]]
+    })
+  })
+  rm(afCalcpop)  # remove afCalcpop
+  # Assign allele frequencies per locus
+  for(i in 1:nloci){
+    for(j in 1:npops){
+      allele_freq[[i]][names(preFreq[[i]][[j]]), j] <- preFreq[[i]][[j]]
+    }
+  }
+  # calculate Heterozygosity exp
+  tsapply <- function(...){t(sapply(...))}
+  hetExp <- tsapply(allele_freq, function(x){
+    apply(x, 2, function(y){
+      1 - (sum(y^2))
+    })
+  })
+  totAlls <- sapply(allele_freq, FUN = "nrow")
+  # Calculate the proportion of alleles per sample
+  propAlls <- apply(obsAlls, 2, function(x){
+    round((x/totAlls)*100, 2)
+  })
+  # R function to calculate expected and observed genetype 
+  # numbers for HWE testing
+  
+  # generate all possible genotypes for each locus per population
+  posGeno <- apply(allele_names, 2, function(x){
+    sapply(x, function(y){
+      if(length(y) == 0){
+        return(NA)
+      } else {
+        genos <- expand.grid(y, y)
+        genos.sort <- t(apply(genos, 1, sort))
+        genos <- unique(genos.sort)
+        geno <- paste(genos[,1], genos[,2], sep = "") 
+        return(geno)      
+      }
+    })
+  })
+  
+  # Count the number of each genotype observed
+  # define a genotype counting function
+  obsGeno <- lapply(1:npops, function(i){
+    lapply(1:nloci, function(j){
+      sapply(posGeno[[i]][[j]], function(x){
+        if(is.na(x)){
+          return(NA)
+        } else {
+          length(which(pop_list[[i]][,j] == x))
+        }
+      })
+    })
+  })
+  
+  
+  expGeno <- lapply(1:npops, function(i){
+    lapply(1:nloci, function(j){
+      sapply(posGeno[[i]][[j]], function(x){
+        if(is.na(x)){
+          return(NA)
+        } else {
+          allele1 <- substr(x, 1, 3)
+          allele2 <- substr(x, 4, 6)
+          Freq1 <- allele_freq[[j]][which(rownames(allele_freq[[j]]) == allele1), i]
+          Freq2 <- allele_freq[[j]][which(rownames(allele_freq[[j]]) == allele2), i]
+          if(allele1 != allele2){
+            expFreq <- 2 * (Freq1 * Freq2)
+            return(as.vector(expNum <- expFreq * locPopSize[j, i]))
+          } else {
+            expFreq <- Freq1^2
+            return(expNum <- as.vector(expFreq * locPopSize[j, i]))
+          }
+        }
+      })
+    })
+  })
+  
+  # Calculate chi-sq
+  chiDif <- sapply(1:npops, function(i){
+    sapply(1:nloci, function(j){
+      if(length(obsGeno[[i]][[j]]) == 1){
+        return(NA)
+      } else {
+        top <- (obsGeno[[i]][[j]] - expGeno[[i]][[j]])^2
+        chi <- top/expGeno[[i]][[j]]
+        return(round(sum(chi), 2))
+      }      
+    })
+  })
+  
+  # Calculate degrees of freedom
+  df <- apply(allele_names, 2,   function(x){
+    sapply(x, function(y){
+      k <- length(y)
+      if(k == 1){
+        return(NA)
+      } else {
+        return((k*(k-1))/2)
+      }
+    })
+  })
+  
+  # Calculate HWE significance
+  HWE <- sapply(1:npops, function(i){
+    round(pchisq(q = chiDif[,i], df = df[,i], lower.tail = FALSE), 4)
+  })
+  
+  # Calculate over all HWE significance
+  HWEall <- round(pchisq(q = colSums(chiDif), df = colSums(df), 
+                         lower.tail = FALSE), 4)
+  # Add pop means or totals to each stat object
+  # allelic richness
+  AR <- round(rbind(AR, colMeans(AR)), 2)
+  dimnames(AR) <- list(c(loci_names, "overall"), pop_names)
+  # Number of individuals typed per locus per pop
+  locPopSize <- rbind(locPopSize, round(colMeans(locPopSize), 2))
+  dimnames(locPopSize) <- list(c(loci_names, "overall"), pop_names)
+  # proportion of alleles per pop
+  propAlls <- round(rbind(propAlls, colMeans(propAlls)), 2)
+  dimnames(propAlls) <- list(c(loci_names, "overall"), pop_names)
+  # Number of alleles observed per pop
+  obsAlls <- rbind(obsAlls, colSums(obsAlls))
+  dimnames(obsAlls) <- list(c(loci_names, "overall"), pop_names)
+  # Observed heterozygosity
+  hetObs <- round(rbind(hetObs, colMeans(hetObs)), 2)
+  dimnames(hetObs) <- list(c(loci_names, "overall"), pop_names)
+  # Expected heterozygosity
+  hetExp <- round(rbind(hetExp, colMeans(hetExp)), 2)
+  dimnames(hetExp) <- list(c(loci_names, "overall"), pop_names)
+  # HWE
+  HWE <- rbind(HWE, HWEall)
+  # Compile information into writable format
+  statComp <- lapply(1:npops, function(i){
+    pop <- rbind(locPopSize[,i], obsAlls[,i],
+                 propAlls[,i], AR[,i], hetObs[,i],
+                 hetExp[,i], HWE[,i])
+    return(pop)
+  })
+  if(npops > 1){
+    writeOut <- cbind(c(pop_names[1], 
+                        "N", "A", "%", "Ar", "Ho", "He", "HWE", "\t"), 
+                      rbind(c(loci_names, "Overall"), 
+                            statComp[[1]], rep("\t", nloci+1)))
+    for(i in 2:npops){
+      writeOut <- rbind(writeOut, 
+                        cbind(c(pop_names[i], 
+                                "N", "A", "%", "Ar", "Ho", "He", "HWE", "\t"),
+                              rbind(c(loci_names, "Overall"), statComp[[i]], 
+                                    rep("\t", nloci+1))))
+    }
+  } else {
+    writeOut <- cbind(c(pop_names[1], 
+                        "N", "A", "%", "Ar", "Ho", "He", "HWE", "\t"), 
+                      rbind(c(loci_names, "Overall"), 
+                            statComp[[1]], rep("\t", nloci+1)))
+  }
+  if (!is.null(outfile)){
+    write_res<-is.element("xlsx",installed.packages()[,1])
+    if(write_res){
+      library("xlsx")
+      write.xlsx(writeOut, file = paste(on, "-[divBasic].xlsx", sep = ""),
+                 sheetName = "Basic stats", col.names = FALSE,
+                 row.names = FALSE, append=FALSE)
+    } else {
+      out<-file(paste(on, "-[divBasic].txt", sep = ""), "w")
+      #cat(paste(colnames(pw_bs_out),sep=""),"\n",sep="\t",file=pw_bts)
+      for(i in 1:nrow(writeOut)){
+        cat(writeOut[i,], "\n", file = out, sep="\t")
+      }
+      close(out)
+    }
+  }
+  list(locus_pop_size = locPopSize,
+       Allele_number = obsAlls,
+       proportion_Alleles = propAlls,
+       Allelic_richness = AR,
+       Ho = hetObs,
+       He = hetExp,
+       HWE = HWE,
+       mainTab = writeOut)
+}
+################################################################################
+# END
+################################################################################
+#
+#
+#
+#
+################################################################################
+# Master file reader
+################################################################################
+fileReader <- function(x){
+  infile <- x
+  if(typeof(infile)=="list"){
+    return(infile) 
+  } else if (typeof(infile)=="character"){
+    dat <- scan(infile, sep = "\n", what = "character", quiet = TRUE)
+    # find number of columns
+    popLoc <- grep("^([[:space:]]*)pop([[:space:]]*)$", tolower(dat))
+    no_col <- popLoc[1] - 1
+    dat1 <- sapply(dat, function(x){
+      x <- unlist(strsplit(x, split = "\\s+"))
+      if(is.element("", x)){
+        x <- x[- (which(x == ""))]
+      }
+      if(is.element(",", x)){
+        x <- x[- (which(x ==","))]
+      }
+      if(length(x) != 1 && length(x) != no_col){
+        x <- paste(x, collapse = "")
+      }
+      if(length(x) < no_col){
+        tabs <- paste(rep(NA, (no_col - length(x))), sep = "\t", collapse = "\t")
+        line <- paste(x, tabs, sep = "\t")
+        line <- unlist(strsplit(line, split = "\t"))
+        return(line)
+      } else {
+        return(x)
+      }
+    })
+  }
+  out <- as.data.frame(t(dat1))
+  return(out)
+}
+################################################################################
+# END
+################################################################################
+################################     END ALL       ##############################
+##################################################################################

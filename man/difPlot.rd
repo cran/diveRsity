@@ -10,7 +10,7 @@ This function uses results from \code{div.part} to plot pairwise statistic estim
 }
 
 \details{
-This function returns four R plots for Fst (theta) (if \code{fstWC=TRUE} in \code{div.part}, Gst, G'st and D (Jost) pairwise values. This plot printed to the R graphical device if the argument \code{interactive = FALSE}. N.B. the argument \code{interactive = TRUE} is only valid if the package \code{sendplot} is available.
+This function returns four R plots for Fst (theta) (if \code{WC_Fst = TRUE} in \code{div.part}, Gst, G'st and D (Jost) pairwise values. This plot printed to the R graphical device if the argument \code{interactive = FALSE}. N.B. the argument \code{interactive = TRUE} is only valid if the package \code{sendplot} is available.
 }
 
 \usage{

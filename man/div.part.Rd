@@ -15,8 +15,9 @@ All results will be written to a user defined folder ("working_directory/outfile
 
 \usage{
 
-div.part(infile, outfile = NULL, gp = 3,
-         WC_Fst = FALSE, bs_locus = FALSE, 
+div.part(infile = NULL, outfile = NULL, gp = 3,
+         pairwise = FALSE, WC_Fst = FALSE, 
+         bs_locus = FALSE, 
          bs_pairwise = FALSE,
          bootstraps = 0, Plot = FALSE, 
          parallel = FALSE)
@@ -29,6 +30,8 @@ div.part(infile, outfile = NULL, gp = 3,
 \item{outfile}{Allows users to specify a prefix for an output folder. Name must a character string enclosed in either \dQuote{} or `'.}
 
 \item{gp}{Specifies the digit format of the \code{infile}. Either 3 (default) or 2.}
+
+\item{pairwise}{A logical argument indicating whether standard pairwise diversity statistics should be calculated and returned as a diagonal matrix.}
 
 \item{WC_Fst}{A Logical argument indicating whether Weir & Cockerham's 1984 F-statistics should be calculated. NOTE - Calculating these statistics adds significant time to analysis when carrying out pairwise comparisons.}
 
@@ -92,6 +95,7 @@ Weir, B.S. & Cockerham, C.C., Estimating F-Statistics, for the Analysis of Popul
 # simply use the following format to run the function
 # 
 # test_result<-div.part(infile = 'mydata', outfile = "myresults', 
-#                       gp=3, bs_locus = TRUE, bs_pairwise = TRUE, 
-#                       bootstraps = 1000, Plot = TRUE)
+#                       gp = 3, pairwise = TRUE, bs_locus = TRUE, 
+#                       bs_pairwise = TRUE, bootstraps = 1000, 
+#                       Plot = TRUE)
 }
