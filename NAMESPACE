@@ -1,8 +1,13 @@
-export (div.part, 
-	in.calc,
-	readGenepop.user,
+export (divPart, 
+	inCalc,
+	readGenepop,
 	corPlot,
 	difPlot,
 	chiCalc,
+	divBasic,
 	divOnline,
-	divBasic)
+	fstOnly,
+	div.part,
+	in.calc,
+	readGenepop.user,
+	divRatio)

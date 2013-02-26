@@ -1,13 +1,12 @@
 Package: diveRsity
-Version: 1.4.2
-Date: 2013/01/22
+Version: 1.4.4
+Date: 2013/02/26
 Title: Genetic diversity partition statistics and Informative locus
         selection using Fst, Gst, Dest(Jost Chao) G'st and In.
 Author: Kevin Keenan, <kkeenan02@qub.ac.uk>
 Maintainer: Kevin Keenan <kkeenan02@qub.ac.uk>
-Suggests: xlsx, sendplot, doSNOW, snow, foreach, iterators, doParallel,
-        parallel
-Depends: plotrix, shiny
+Suggests: xlsx, sendplot, foreach, iterators, doParallel, parallel
+Depends: R (>= 2.14), plotrix, shiny
 Repository: CRAN
 Description: diveRsity is a package which allows the calculation of
         both genetic diversity partition statistics, genetic
@@ -23,5 +22,6 @@ Description: diveRsity is a package which allows the calculation of
 License: GPL (>= 2)
 ByteCompile: yes
 URL: http://diversityinlife.weebly.com/
-Packaged: 2013-01-26 20:42:41 UTC; Kevin
-Date/Publication: 2013-01-26 22:13:36
+Packaged: 2013-03-05 12:47:44 UTC; Kevin
+NeedsCompilation: no
+Date/Publication: 2013-03-05 16:02:57

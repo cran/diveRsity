@@ -1,5 +1,5 @@
 library(shiny)
-library(diveRsity)
+#library(diveRsity)
 
 
 

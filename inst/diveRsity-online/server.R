@@ -1,7 +1,7 @@
 # Load packages
 library("shiny")
 library("plotrix")#, lib.loc = "/home/kkeenan/depends/")
-library("diveRsity")#, lib.loc = "/home/kkeenan/depends/")
+#library("diveRsity")#, lib.loc = "/home/kkeenan/depends/")
 
 shinyServer(function(input, output) {
 
@@ -9,37 +9,38 @@ shinyServer(function(input, output) {
 #    if(input$parallel){
 #    library("doSNOW")
   
-  out <- reactive (function(){
+  out <- reactive ({
     
     if(!is.null(input$file)) {
       
       infile <- input$file$datapath
       
-      diveRsity::div.part(infile = infile,
-                          outfile = NULL,
-                          gp = input$gp,
-                          pairwise = input$pairwise,
-                          WC_Fst = input$WC_Fst,
-                          bs_locus = input$bs_locus,
-                          bs_pairwise = input$bs_pairwise,
-                          bootstraps = input$bootstraps,
-                          Plot = FALSE,
-                          parallel = input$parallel)
+      divPart(infile = infile,
+              outfile = NULL,
+              gp = input$gp,
+              pairwise = input$pairwise,
+              WC_Fst = input$WC_Fst,
+              bs_locus = input$bs_locus,
+              bs_pairwise = input$bs_pairwise,
+              bootstraps = input$bootstraps,
+              plot = FALSE,
+              parallel = input$parallel)
+                          
     }
   })
   
-  divBout <- reactive(function(){
+  divBout <- reactive({
     if(!is.null(input$divBasic)){
-      diveRsity::divBasic(infile = input$file$datapath,
-                          outfile = NULL,
-                          gp = input$gp)
+      divBasic(infile = input$file$datapath,
+               outfile = NULL,
+               gp = input$gp)
     }
   })
   
   #############################################################################
   # divBasic output
   #############################################################################
-  output$divB <- reactiveTable(function(){
+  output$divB <- renderTable({
     if(input$divBasic && !is.null(input$file)){
       res <- divBout()
       return(as.data.frame(res$mainTab))
@@ -67,7 +68,7 @@ shinyServer(function(input, output) {
   #############################################################################
   # Standard stats
   #############################################################################  
-  output$std <-  reactiveTable(function(){
+  output$std <-  renderTable({
     if(!is.null(input$file)) {
       out <- out()
       return(as.data.frame(out$standard))
@@ -99,7 +100,7 @@ shinyServer(function(input, output) {
   #############################################################################
   # Estimated stats
   #############################################################################
-  output$est <- reactiveTable(function(){
+  output$est <- renderTable({
     if(!is.null(input$file)) {
       out <- out()
       return(as.data.frame(out$estimate))
@@ -129,7 +130,7 @@ shinyServer(function(input, output) {
   #############################################################################
   # Pairwise matrices
   #############################################################################
-  output$pw <- reactiveTable(function(){
+  output$pw <- renderTable({
     if(!is.null(input$file) && input$pairwise) {
       out <- out()
       pw_fix <- lapply(out$pairwise, function(x){
@@ -158,7 +159,7 @@ shinyServer(function(input, output) {
           pw <- rbind(pw, spltr, spltr_nm, cbind(rowcol, pre_pw))
         }
       } else {
-        for (i in c(5,6,8)){
+        for (i in c(5,6,7,8)){
           spltr_nm <- matrix(c(names(out$pairwise)[i], 
                                rep("", (length(spltr)-1))), 
                              ncol = length(spltr), nrow = 1)
@@ -208,7 +209,7 @@ shinyServer(function(input, output) {
           pw <- rbind(pw, spltr, spltr_nm, cbind(rowcol, pre_pw))
         }
       } else {
-        for (i in c(5,6,8)){
+        for (i in c(5,6,7,8)){
           spltr_nm <- matrix(c(names(out$pairwise)[i], 
                                rep("", (length(spltr)-1))), 
                              ncol = length(spltr), nrow = 1)
@@ -226,7 +227,7 @@ shinyServer(function(input, output) {
   #############################################################################
   # Locus bootstraps
   #############################################################################
-  output$bs_loc <- reactiveTable(function(){
+  output$bs_loc <- renderTable({
     if(input$bs_locus == TRUE){
       out <- out()
       splt <- c("--","--","--","--")
@@ -243,7 +244,7 @@ shinyServer(function(input, output) {
           suppressWarnings(bs_loc <- rbind(bs_loc, splt, splt_nm, adder))
         }
       } else {
-        for (i in c(5,6,8)){
+        for (i in c(5,6,7,8)){
           splt_nm <- c(names(out$bs_locus)[i],"","","")
           adder <- cbind(rownames(out$bs_locus[[i]]),
                          out$bs_locus[[i]])
@@ -278,7 +279,7 @@ shinyServer(function(input, output) {
             suppressWarnings(bs_loc <- rbind(bs_loc, splt, splt_nm, adder))
           }
         } else {
-          for (i in c(5,6,8)){
+          for (i in c(5,6,7,8)){
             splt_nm <- c(names(out$bs_locus)[i],"","","")
             adder <- cbind(rownames(out$bs_locus[[i]]),
                            out$bs_locus[[i]])
@@ -296,7 +297,7 @@ shinyServer(function(input, output) {
   ############################################################################
   # Pairwise bootstrap
   ############################################################################  
-  output$pw_bs <- reactiveTable(function(){
+  output$pw_bs <- renderTable({
     if(input$bs_pairwise == TRUE){
       out <- out()
       splt <- c("--","--","--","--")
@@ -311,7 +312,7 @@ shinyServer(function(input, output) {
           suppressWarnings(pw <- rbind(pw, splt, splt_nm, adder))                                               
         }
       } else {
-        for(i in c(5,6,8)){
+        for(i in c(5,6,7,8)){
           splt_nm <- c(names(out$bs_pairwise)[i], "", "", "")
           adder <- cbind(rownames(out$bs_pairwise[[i]]),
                          out$bs_pairwise[[i]])
@@ -345,7 +346,7 @@ shinyServer(function(input, output) {
             suppressWarnings(pw <- rbind(pw, splt, splt_nm, adder))                                               
           }
         } else {
-          for(i in c(5,6,8)){
+          for(i in c(5,6,7,8)){
             splt_nm <- c(names(out$bs_pairwise)[i], "", "", "")
             adder <- cbind(rownames(out$bs_pairwise[[i]]),
                            out$bs_pairwise[[i]])
@@ -361,25 +362,25 @@ shinyServer(function(input, output) {
     }
   )
   
-  #Plot attempt
-  output$cor <- reactivePlot(function() {
+  #plot attempt
+  output$cor <- renderPlot({
     if(input$corplot == TRUE){
       if(is.null(input$file)) {
         infile <- "./Test_data.txt"
       } else {
         infile <- input$file$datapath
       }
-      x <- readGenepop.user(infile, input$gp, FALSE)
-      y <- div.part(infile = infile,
-                    outfile = NULL,
-                    gp = input$gp,
-                    pairwise = FALSE,
-                    WC_Fst = TRUE,
-                    bs_locus = FALSE,
-                    bs_pairwise = FALSE,
-                    bootstraps = 0,
-                    Plot = FALSE,
-                    parallel = FALSE)
+      x <- readGenepop(infile, input$gp, FALSE)
+      y <- divPart(infile = infile,
+                   outfile = NULL,
+                   gp = input$gp,
+                   pairwise = FALSE,
+                   WC_Fst = TRUE,
+                   bs_locus = FALSE,
+                   bs_pairwise = FALSE,
+                   bootstraps = 0,
+                   plot = FALSE,
+                   parallel = FALSE)
       par(mfrow = c(2, 2))
       par(mar = c(4, 5, 2, 2))
       sigStar <- function(x){
@@ -449,17 +450,17 @@ shinyServer(function(input, output) {
         } else {
           infile <- input$file$datapath
         }
-        x <- readGenepop.user(infile, input$gp, FALSE)
-        y <- div.part(infile = infile,
-                      outfile = NULL,
-                      gp = input$gp,
-                      pairwise = FALSE,
-                      WC_Fst = TRUE,
-                      bs_locus = FALSE,
-                      bs_pairwise = FALSE,
-                      bootstraps = 0,
-                      Plot = FALSE,
-                      parallel = FALSE)
+        x <- readGenepop(infile, input$gp, FALSE)
+        y <- divPart(infile = infile,
+                     outfile = NULL,
+                     gp = input$gp,
+                     pairwise = FALSE,
+                     WC_Fst = TRUE,
+                     bs_locus = FALSE,
+                     bs_pairwise = FALSE,
+                     bootstraps = 0,
+                     plot = FALSE,
+                     parallel = FALSE)
         par(mfrow = c(2, 2))
         par(mar = c(4, 5, 2, 2))
         sigStar <- function(x){
