@@ -10,4 +10,5 @@ export (divPart,
 	div.part,
 	in.calc,
 	readGenepop.user,
-	divRatio)
+	divRatio,
+	bigDivPart)
