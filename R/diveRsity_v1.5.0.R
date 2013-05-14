@@ -1,6 +1,6 @@
 ################################################################################
 ################################################################################
-##                              diveRsity v1.4.6                              ##  
+##                              diveRsity v1.5.0                              ##  
 ##                            by Kevin Keenan QUB                             ##  
 ##            An R package for the calculation of differentiation             ##
 ##              statistics and locus informativeness statistics               ##  
@@ -124,7 +124,7 @@ divPart<-function(infile = NULL, outfile = NULL, gp = 3, pairwise = FALSE,
     #Estimated
     pre_ot2 <- cbind(accDat$locus_names,
                      round(as.numeric(accDat$locus_harmonic_N),4),
-                     round(as.numeric(accDat$ht_est),4),
+                     round(as.numeric(accDat$hst_est),4),
                      round(as.numeric(accDat$dst_est),4),
                      round(as.numeric(accDat$gst_est),4),
                      round(as.numeric(accDat$gst_est_hedrick),4),
@@ -1366,13 +1366,21 @@ readGenepopX <- function (x) {
   }  
   if (gp==3) {
     plMake<-function(x){
-      return(matrix(sprintf("%06g",as.numeric(x)), 
-                    nrow = nrow(x), ncol = ncol(x)))
+      out <- matrix(sprintf("%06g",as.numeric(x)),
+                    nrow = nrow(x), ncol = ncol(x))
+      if (Sys.info()["sysname"] == "Darwin"){
+        out[out == "0000NA"] <- "    NA"
+      }
+      return(out)
     }
   } else if (gp==2) {
     plMake<-function(x){
-      return(matrix(sprintf("%04g",as.numeric(x)),
-                    nrow = nrow(x), ncol = ncol(x)))
+      out <- matrix(sprintf("%04g",as.numeric(x)),
+                    nrow = nrow(x), ncol = ncol(x))
+      if (Sys.info()["sysname"] == "Darwin"){
+        out[out == "00NA"] <- "  NA"
+      }
+      return(out)
     }
   }
   suppressWarnings(pop_list<-lapply(pop_list, plMake))
@@ -2345,13 +2353,21 @@ in.bs<-function(x){
     
     if (gp==3) {
       plMake<-function(x){
-        return(matrix(sprintf("%06g",as.numeric(x)),
-                      nrow = nrow(x), ncol = ncol(x)))
+        out <- matrix(sprintf("%06g",as.numeric(x)),
+                      nrow = nrow(x), ncol = ncol(x))
+        if (Sys.info()["sysname"] == "Darwin"){
+          out[out == "0000NA"] <- "    NA"
+        }
+        return(out)
       }
     } else if (gp==2) {
       plMake<-function(x){
-        return(matrix(sprintf("%04g",as.numeric(x)),
-                      nrow = nrow(x), ncol = ncol(x)))
+        out <- matrix(sprintf("%04g",as.numeric(x)),
+                      nrow = nrow(x), ncol = ncol(x))
+        if (Sys.info()["sysname"] == "Darwin"){
+          out[out == "00NA"] <- "  NA"
+        }
+        return(out)
       }
     }
     suppressWarnings(pop_list<-lapply(pop_list, plMake))
@@ -2845,13 +2861,21 @@ readGenepop <- function (infile=NULL, gp=3, bootstrap=FALSE) {
   
   if (gp==3) {
     plMake<-function(x){
-      return(matrix(sprintf("%06g",as.numeric(x)),
-                    nrow = nrow(x), ncol = ncol(x)))
+      out <- matrix(sprintf("%06g",as.numeric(x)),
+                    nrow = nrow(x), ncol = ncol(x))
+      if (Sys.info()["sysname"] == "Darwin"){
+        out[out == "0000NA"] <- "    NA"
+      }
+      return(out)
     }
   } else if (gp==2) {
     plMake<-function(x){
-      return(matrix(sprintf("%04g",as.numeric(x)),
-                    nrow = nrow(x), ncol = ncol(x)))
+      out <- matrix(sprintf("%04g",as.numeric(x)),
+                    nrow = nrow(x), ncol = ncol(x))
+      if (Sys.info()["sysname"] == "Darwin"){
+        out[out == "00NA"] <- "  NA"
+      }
+      return(out)
     }
   }
   suppressWarnings(pop_list<-lapply(pop_list, plMake))
@@ -3198,13 +3222,23 @@ pre.divLowMemory <- function(y){
       indexer <- unlist(indexer)
       raw_data <- raw_data[-(indexer), ]    
     }  
-    if (gp == 3) {
+    if (gp==3) {
       plMake<-function(x){
-        return(matrix(sprintf("%06g",as.numeric(x)),nrow=nrow(x),ncol=ncol(x)))
+        out <- matrix(sprintf("%06g",as.numeric(x)),
+                      nrow = nrow(x), ncol = ncol(x))
+        if (Sys.info()["sysname"] == "Darwin"){
+          out[out == "0000NA"] <- "    NA"
+        }
+        return(out)
       }
-    } else if (gp == 2) {
+    } else if (gp==2) {
       plMake<-function(x){
-        return(matrix(sprintf("%04g",as.numeric(x)),nrow=nrow(x),ncol=ncol(x)))
+        out <- matrix(sprintf("%04g",as.numeric(x)),
+                      nrow = nrow(x), ncol = ncol(x))
+        if (Sys.info()["sysname"] == "Darwin"){
+          out[out == "00NA"] <- "  NA"
+        }
+        return(out)
       }
     }
     suppressWarnings(pop_list<-lapply(pop_list, plMake))
@@ -4372,13 +4406,23 @@ chiCalc <- function(infile = NULL, outfile = NULL, gp = 3, minFreq = NULL){
       indexer <- unlist(indexer)
       raw_data <- raw_data[-(indexer), ]    
     }  
-    if (gp == 3) {
+    if (gp==3) {
       plMake<-function(x){
-        return(matrix(sprintf("%06g",as.numeric(x)),nrow=nrow(x),ncol=ncol(x)))
+        out <- matrix(sprintf("%06g",as.numeric(x)),
+                      nrow = nrow(x), ncol = ncol(x))
+        if (Sys.info()["sysname"] == "Darwin"){
+          out[out == "0000NA"] <- "    NA"
+        }
+        return(out)
       }
-    } else if (gp == 2) {
+    } else if (gp==2) {
       plMake<-function(x){
-        return(matrix(sprintf("%04g",as.numeric(x)),nrow=nrow(x),ncol=ncol(x)))
+        out <- matrix(sprintf("%04g",as.numeric(x)),
+                      nrow = nrow(x), ncol = ncol(x))
+        if (Sys.info()["sysname"] == "Darwin"){
+          out[out == "00NA"] <- "  NA"
+        }
+        return(out)
       }
     }
     suppressWarnings(pop_list<-lapply(pop_list, plMake))
@@ -4838,13 +4882,21 @@ divBasic <- function (infile = NULL, outfile = NULL, gp = 3) {
   })
   if (gp==3) {
     plMake<-function(x){
-      return(matrix(sprintf("%06g",as.numeric(x)),
-                    nrow = nrow(x), ncol = ncol(x)))
+      out <- matrix(sprintf("%06g",as.numeric(x)),
+                    nrow = nrow(x), ncol = ncol(x))
+      if (Sys.info()["sysname"] == "Darwin"){
+        out[out == "0000NA"] <- "    NA"
+      }
+      return(out)
     }
   } else if (gp==2) {
     plMake<-function(x){
-      return(matrix(sprintf("%04g",as.numeric(x)),
-                    nrow = nrow(x), ncol = ncol(x)))
+      out <- matrix(sprintf("%04g",as.numeric(x)),
+                    nrow = nrow(x), ncol = ncol(x))
+      if (Sys.info()["sysname"] == "Darwin"){
+        out[out == "00NA"] <- "  NA"
+      }
+      return(out)
     }
   }
   suppressWarnings(pop_list<-lapply(pop_list, plMake))
@@ -5648,13 +5700,23 @@ fstOnly <- function(infile = NULL, outfile = NULL, gp = 3,
       indexer <- unlist(indexer)
       raw_data <- raw_data[-(indexer), ]    
     }  
-    if (gp == 3) {
+    if (gp==3) {
       plMake<-function(x){
-        return(matrix(sprintf("%06g",as.numeric(x)),nrow=nrow(x),ncol=ncol(x)))
+        out <- matrix(sprintf("%06g",as.numeric(x)),
+                      nrow = nrow(x), ncol = ncol(x))
+        if (Sys.info()["sysname"] == "Darwin"){
+          out[out == "0000NA"] <- "    NA"
+        }
+        return(out)
       }
-    } else if (gp == 2) {
+    } else if (gp==2) {
       plMake<-function(x){
-        return(matrix(sprintf("%04g",as.numeric(x)),nrow=nrow(x),ncol=ncol(x)))
+        out <- matrix(sprintf("%04g",as.numeric(x)),
+                      nrow = nrow(x), ncol = ncol(x))
+        if (Sys.info()["sysname"] == "Darwin"){
+          out[out == "00NA"] <- "  NA"
+        }
+        return(out)
       }
     }
     suppressWarnings(pop_list<-lapply(pop_list, plMake))
@@ -6149,16 +6211,24 @@ divRatio <- function(infile = NULL, outfile = NULL, gp = 3, pop_stats =  NULL,
   })  
   if (gp==3) {
     plMake<-function(x){
-      suppressWarnings(return(matrix(sprintf("%06g",as.numeric(x)),
-                                     nrow=nrow(x),ncol=ncol(x))))
+      out <- matrix(sprintf("%06g",as.numeric(x)),
+                    nrow = nrow(x), ncol = ncol(x))
+      if (Sys.info()["sysname"] == "Darwin"){
+        out[out == "0000NA"] <- "    NA"
+      }
+      return(out)
     }
   } else if (gp==2) {
     plMake<-function(x){
-      suppressWarnings(return(matrix(sprintf("%04g",as.numeric(x)),
-                                     nrow=nrow(x),ncol=ncol(x))))
+      out <- matrix(sprintf("%04g",as.numeric(x)),
+                    nrow = nrow(x), ncol = ncol(x))
+      if (Sys.info()["sysname"] == "Darwin"){
+        out[out == "00NA"] <- "  NA"
+      }
+      return(out)
     }
   }
-  pop_list<-lapply(pop_list, plMake)
+  suppressWarnings(pop_list<-lapply(pop_list, plMake))
   # deal with missing data
   if (gp == 3){
     for(i in 1:npops){
