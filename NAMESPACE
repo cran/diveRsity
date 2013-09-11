@@ -11,4 +11,5 @@ export (divPart,
 	in.calc,
 	readGenepop.user,
 	divRatio,
-	bigDivPart)
+	bigDivPart,
+	microPlexer)

@@ -1,6 +1,6 @@
 ################################################################################
 ################################################################################
-##                              diveRsity v1.5.0                              ##  
+##                              diveRsity v1.5.3                              ##  
 ##                            by Kevin Keenan QUB                             ##  
 ##            An R package for the calculation of differentiation             ##
 ##              statistics and locus informativeness statistics               ##  
@@ -4019,7 +4019,7 @@ difPlot <- function (x, outfile= NULL, interactive = FALSE) {
   on=outfile
   inta<-interactive
   #output from divPart
-  require(plotrix)
+  #require(plotrix)
   
   if(is.null(on) == TRUE && inta == TRUE){
     of = paste(getwd(),"/", sep = "")
@@ -4836,6 +4836,20 @@ chiCalc <- function(infile = NULL, outfile = NULL, gp = 3, minFreq = NULL){
 # try to include diveRsity online
 divOnline <- function(){
     shiny::runApp(system.file('diveRsity-online', package = 'diveRsity'))
+}
+################################################################################
+# END
+################################################################################
+#
+#
+#
+#
+#
+#
+#
+# try to include microPlexer app
+microPlexer <- function(){
+  shiny::runApp(system.file('microPlexer', package = 'diveRsity'))
 }
 ################################################################################
 # END
