@@ -42,7 +42,7 @@ In addition to these features, \texttt{diveRsity} also provides users with vario
 \texttt{diveRsity} was written to ensure that even \texttt{R} beginners can carry out genetic analyses in \texttt{R} without major difficulties. By automatically writing analysis results to file, use\texttt{R}s do not need to understand how to access \texttt{variables} in the \texttt{R} environment, let alone know what a \texttt{variable} is. However, for more experienced use\texttt{R}s, all analysis functions return results \texttt{variables} to the \texttt{R} environment, details of which are provided in the \textbf{Function usage} section below.
 
 \subsubsection{How to cite}
-Keenan, K., McGinnity, P., Cross, T. F., Crozier, W. W., \& Prod\"{o}hl, P. A. (2013). \texttt{diveRsity}: An R package for the estimation and exploration of population genetics parameters and their associated errors. \emph{Methods in Ecology and Evolution}. doi:10.1111/2041-210X.12067
+Keenan, K., McGinnity, P., Cross, T. F., Crozier, W. W., \& Prod\"{o}hl, P. A. (2013). \texttt{diveRsity}: An R package for the estimation and exploration of population genetics parameters and their associated errors. \emph{Methods in Ecology and Evolution}, 4: 782-788. doi:10.1111/2041-210X.12067
 
 
 \subsubsection{What's new?}
@@ -87,6 +87,24 @@ citation("diveRsity")
 Version 1.5.0 also fixes a major bug on Mac systems. Due to unexpected behaviour of the \texttt{sprintf} function, \texttt{divPart}, \texttt{inCalc} and \texttt{readGenepop} were incorrectly coding alleles, thus leading to erroneous parameter calculations.
 
 \textbf{Version 1.5.3} introduces the new web app, \texttt{microPlexer}. This application is intended to aid researchers wishing to develop microsatellite multiplex system based on locus size ranges and fluorphore tags.
+
+\textbf{Version 1.5.6} introduces a new function \texttt{arp2gen}, which allows users to convert \emph{Arlequin} genotype files to \emph{genepop} files. The function is intended to provide a more integrated experience to users by negating the need to use separate software to carry out file conversions. Although this function only allows \textbf{.arp} to \textbf{.gen} file conversions, other \texttt{R} packages provide additional conversion facilities. Some such packages are; \texttt{adegenet} and \texttt{PopGenKit}.
+
+\textbf{Version 1.5.7} introduced a new \textbf{experimental} function, \texttt{divMigrate}. The function is based on a new methods presented in \citep{Sundqvist2013}, for detecting the direction of differentiation, and using this information to infer the relative migration between pairs of populations. While the method performs well for some simple migration scenarios, it is still not clear how generally applicable it is under other scenarios (e.g. the effect of high mutation rates, or recent divergence etc.). For this reason, we recommend caution when applying the method to your own data.
+
+\textbf{Version 1.6.0} contains a new function, \texttt{fastDivPart}. This function is virtually identical to \texttt{divPart}, with some slight changes to output structures and formats. The key differences in these formats are:
+\begin{itemize}
+\item[1]{\texttt{\$pairwise} in \texttt{fastDivPart} only contains the unbiased estimators of $G_{ST}$, $G'_{ST}$, $D_{Jost}$ and $\theta$.}
+
+\item[2]{The names of the output data structures in \texttt{\$pairwise}, \texttt{\$bs\_pairwise} and \texttt{\$meanPairwise} are now \texttt{gstEst}, \texttt{gstEstHed}, \texttt{djostEst} and \texttt{thetaWC}, rather than \texttt{Gst\_est}, \texttt{G\_hed\_st\_est}, \texttt{D\_Jost\_est} and \texttt{Fst\_WC}, respectively.}
+
+\end{itemize}
+
+This new function is optimised to provide faster pairwise calculations. Some performance tests can be found at: 
+\href{https://github.com/kkeenan02/diveRsity-dev/blob/master/fastDivPart-tests.md}{https://github.com/kkeenan02/diveRsity-dev/blob/master/fastDivPart-tests.md}
+
+\textbf{Version 1.6.1} contains a new function, \texttt{haploDiv}, for calculating Weir \& Cockerham's $\theta$ from haploid genotype data. The data should be in the two or three digit genepop format. See below for further description of the function.
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
@@ -149,7 +167,7 @@ To load \texttt{diveRsity} in the current \texttt{R} session, type the following
 library("diveRsity")
 @
 You will not need to load any of the other dependencies or optional packages as \texttt{diveRsity} will do this as and when it needs to use them. After loading \texttt{diveRsity} into your current \texttt{R} session all of its functions are available for you to use.\par
-For convenient access to usage information on each function, type:\par
+For convenient access to usage information on each function, within the \texttt{R} environment, type:\par
 <<eval = FALSE>>=
 ?divPart
 ?inCalc
@@ -162,6 +180,9 @@ For convenient access to usage information on each function, type:\par
 ?fstOnly
 ?divRatio
 ?microPlexer
+?arp2gen
+?divMigrate
+?haploDiv
 @
 Each of these commands will provide information on function usage. The help pages associated with each function describe in detail how each argument should be passed to the function. 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -248,7 +269,7 @@ D_{est(Chao)} = \frac{1}{[(\frac{1}{A})+var(D)(\frac{1}{A})^3]}
 \footnotesize
 Where $A$ is the arithmetic mean of $D_{Jost}$ across loci, and $var(D)$ is the variance of $D_{Jost}$ across loci.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsubsection*{\textbf{$F_{ST}$ (i.e. $\hat{\theta}$)} \citep{Weir1984,Weir1996}}
+\subsubsection*{\textbf{$F_{ST}$ (i.e. $\hat{\theta}$)} \citep{Weir1984}}
 %% equation
 \normalsize
 \begin{center}
@@ -378,6 +399,18 @@ This function is the first in a series focused in the analysis of data sets cont
 \textbf{New to v1.5.3}\\
 \texttt{microPlexer} is a simple function which allows users to launch a web application designed to aid in the development of microsatellite multiplex systems. The application allows users to flexibly organise microsatellite loci into PCR groups based on two main algorithms. The first, the \emph{high-throughput} algorithm, aims to group as many loci into as few multiplex groups as possible, while ensuring user defined locus separation limits are observed. The second, the \emph{balanced throughput} algorithm, organises loci into multiple multiplex groups with, roughly, the same number of loci. This algorithm is useful for minimising the possible risk of primer interactions during PCR. The web app was built using the \texttt{shiny} package from RStudio and Inc \citep{shinypkg}.
 
+\subsection{arp2gen}
+\textbf{New to v1.5.6}
+\texttt{arp2gen} is a small function allowing the conversion of \emph{Arlequin} genotype files to \emph{genepop} file format.
+
+\subsection{divMigrate}
+\textbf{New to v1.5.7}\\
+\texttt{divMigrate} is an \textbf{experimental} function, allowing users to investigate and plot migration pattern in microsatellite allele data.
+See \texttt{?divMigrate} for more details. The paper that the method is derived from is \citep{Sundqvist2013}.
+
+\subsection{haploDiv}
+\textbf{New to v1.6.1}\\
+\texttt{haploDiv} allows users to calculate Weir \& Cockerham's (1984) $\theta$ from haploid genotype data. These data should be provided in the form of a two digit or three digit genepop file. The function essentially reads the haploid genotypes, \emph{diploidizes} them (e.g. alleles coded as '01' will become '0101'), then the function \texttt{fastDivPart} is used to calculate $F_{ST}$ estimates for various user defined levels. The function provides the facility to write a pairwise $F_{ST}$ matrix to .txt file, as well as pairwise bootstrapped 95\% confidence limits for each pairwise comparison.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \section{Function Usage}
@@ -394,7 +427,7 @@ divPart(infile = NULL, outfile = NULL, gp = 3, pairwise = FALSE,
 \subsubsection{Arguments}
 \begin{description}[style=multiline,leftmargin=3cm,font=\normalfont]
 
-\item[\texttt{infile}] {Specifies the name of the \emph{`genepop'} \citep{Rousset2008} file from which the statistics are to be calculated. This file can be in either the 3 digit of 2 digit format. The name must be a character string.}
+\item[\texttt{infile}] {Specifies the name of the \emph{`genepop'} \citep{Raymond1995} file from which the statistics are to be calculated. This file can be in either the 3 digit of 2 digit format. The name must be a character string.}
 
 \item[\texttt{outfile}] {Allows use\texttt{R}s to specify a prefix for an output folder. Name must a character string enclosed in either ``'' or `'.}
 
@@ -448,6 +481,7 @@ For use\texttt{R}s wishing to carry out post analysis manipulations, all results
 #data(Test_data,package='diveRsity')
 #library(diveRsity)
 #x<-capture.output(res<-divPart(Test_data,"outtt",3,T,T,T,T,3,F,T))
+#divfl <- system.file("doc", "div_res.RData", package = "diveRsity")
 load("./div_res.RData")
 res <- div_results
 @
@@ -629,7 +663,7 @@ inCalc(infile, outfile = NULL, gp = 3, bs_locus = FALSE,
 
 \begin{description}[style=multiline,leftmargin=3cm,font=\normalfont]
 
-\item[\texttt{infile}] Specifying the name of the \emph{`genepop'} \citep{Rousset2008} file from which the statistics are to be calculated This file can be in either the 3 digit of 2 digit format. The name must be a character string.
+\item[\texttt{infile}] Specifying the name of the \emph{`genepop'} \citep{Raymond1995} file from which the statistics are to be calculated This file can be in either the 3 digit of 2 digit format. The name must be a character string.
 
 \item[\textbf{\texttt{outfile}}] Allows use\texttt{R}s to specify a suffix for output folder and files. Name must a character string enclosed in either ``" or `'.
 
@@ -672,6 +706,7 @@ Values returned from \texttt{inCalc} are a single \texttt{.xlsx} workbook (if th
 For use\texttt{R}s wishing to carry out post analysis manipulations, all results from \texttt{inCalc} are returned to the \texttt{R} environment. Depending on the bootstrap options chosen these results include between one to three of the \texttt{variables} below:
 
 <<echo=FALSE, results=hide>>=
+#infl <- system.file("doc", "in_res.RData", package = "diveRsity")
 load("./in_res.RData")
 res_in <- in_results
 @
@@ -750,7 +785,7 @@ readGenepop(infile = NULL, gp = 3, bootstrap = FALSE)
 
 \begin{description}[style=multiline,leftmargin=3cm,font=\normalfont]
 
-\item[\texttt{infile}] Specifying the name of the \emph{`genepop'} \citep{Rousset2008} file from which the statistics are to be calculated This file can be in either the 3 digit of 2 digit format. The name must be a character string.
+\item[\texttt{infile}] Specifying the name of the \emph{`genepop'} \citep{Raymond1995} file from which the statistics are to be calculated This file can be in either the 3 digit of 2 digit format. The name must be a character string.
 
 \item[\textbf{\texttt{gp}}] Specifies the digit format of the \texttt{infile}. Either 3 (default) or 2.
 
@@ -890,7 +925,7 @@ chiCalc(infile = NULL, outfile = NULL, gp = 3, minFreq = NULL)
 \subsubsection{Arguments}
 \begin{description}[style=multiline,leftmargin=3cm,font=\normalfont]
 
-\item[\texttt{infile}] Specifying the name of the \emph{`genepop'} \citep{Rousset2008} file from which the statistics are to be calculated This file can be in either the 3 digit of 2 digit format. The name must be a character string.
+\item[\texttt{infile}] Specifying the name of the \emph{`genepop'} \citep{Raymond1995} file from which the statistics are to be calculated This file can be in either the 3 digit of 2 digit format. The name must be a character string.
 
 \item[\textbf{\texttt{outfile}}] A character string specifying the name given to an output file, containing analysis results. If this argument is passed as \texttt{NULL}, no file will be written.
 
@@ -927,7 +962,7 @@ fstOnly(infile = NULL, outfile = NULL, gp = 3, bs_locus = FALSE,
 \subsubsection{Arguments}
 \begin{description}[style=multiline,leftmargin=3cm,font=\normalfont]
 
-\item[\texttt{infile}] Specifying the name of the \emph{`genepop'} \citep{Rousset2008} file from which the statistics are to be calculated This file can be in either the 3 digit of 2 digit format. The name must be a character string.
+\item[\texttt{infile}] Specifying the name of the \emph{`genepop'} \citep{Raymond1995} file from which the statistics are to be calculated This file can be in either the 3 digit of 2 digit format. The name must be a character string.
 
 \item[\textbf{\texttt{outfile}}] Allows use\texttt{R}s to specify a suffix for output folder and files. Name must a character string enclosed in either ``" or `'.
 
@@ -1018,7 +1053,7 @@ bigDivPart(infile = NULL, outfile = NULL, WC_Fst = FALSE,
 \subsubsection{Arguments}
 \begin{description}[style=multiline,leftmargin=3cm,font=\normalfont]
 
-\item[\texttt{infile}] {Specifies the name of the \emph{`genepop'} \citep{Rousset2008} file from which the statistics are to be calculated. This file can be in either the 3 digit of 2 digit format. The name must be a character string.}
+\item[\texttt{infile}] {Specifies the name of the \emph{`genepop'} \citep{Raymond1995} file from which the statistics are to be calculated. This file can be in either the 3 digit of 2 digit format. The name must be a character string.}
 
 \item[\texttt{outfile}] {Allows use\texttt{R}s to specify a prefix for an output folder. Name must a character string enclosed in either ``'' or `'.}
 
@@ -1055,6 +1090,38 @@ After uploading input data and making the desired parameter selections, multiple
 \begin{center}
 \includegraphics[width=110mm]{microPlexer-1.png}
 \end{center}
+
+\subsection{arp2gen}
+The general usage of this function is as follows:
+
+
+<<eval=FALSE>>=
+arp2gen(infile)
+@
+
+Where \texttt{infile} is a character string pointing to an \emph{Arlequin} genotype file. The infile argument can simply be the file name if the file is located in the current working directory, otherwise an absolute/relative path must be given.
+
+\subsection{divMigrate}
+The general usage of this function is as follows:
+
+<<eval = FALSE>>=
+divMigrate(infile = NULL, stat = c("gst", "d_jost"))
+@
+
+Where \texttt{infile} is either an file name or a path to a file. The file should be in either the Arlequin genotype file format (.arp) or the genepop file format used in other \texttt{diveRsity} functions. The argument \texttt{stat} determines which statistic ($G_{ST}$ or $D_{Jost}$) should be used to calculate the relative migration matrix.
+
+\subsection{haploDiv}
+The general usage of this function is as follows:
+
+<<eval=FALSE>>=
+haploDiv(infile = NULL, outfile = NULL, pairwise = FALSE,
+         bootstraps = 0)
+@
+
+Where \texttt{infile} is the file name or directory location of a haploid genotype genepop file, \texttt{outfile} is the prefix name to be used for output .txt files, \texttt{pairwise} indicates whether a pairwise matrix of Weir \& Cockerham's $\theta$ should be calculated, and \texttt{bootstraps} indicates whether bootstrapped 95\% confidence limits should be estimated for each pairwise comparison.
+
+\textbf{Details} \\
+If the \texttt{outfile} argument is \texttt{NULL}, no results will be written to file. All results are returned to the \texttt{R} workspace. To calculate 95\% confidence limits, \texttt{bootstraps} must be $> 0$, and \texttt{pairwise} must be \texttt{TRUE}. 
 
 \newpage
 \section{Examples}
@@ -1099,6 +1166,7 @@ div_results <- divPart(infile = Test_data, outfile = "Test",
 @
 
 <<echo=FALSE>>=
+#divfl <- system.file("doc", "div_res.RData", package = "diveRsity")
 load("./div_res.RData")
 @
 
@@ -1186,7 +1254,8 @@ in_results <- inCalc (infile = Test_data, outfile = "Test",
 @
 
 <<echo=FALSE>>=
-load("./in_res.RData")
+#infl <- system.file("doc", "in_res.RData", package = "diveRsity") 
+load("./in_res.Rdata")
 @
 
 
@@ -1455,6 +1524,6 @@ print(sessionInfo(), locale = FALSE)
 @
 
 \section{Acknowledgements}
-Many thanks to all of my colleagues for testing code ansd reporting bugs. In particular, we thank Mark Ravinet, Erin Landguth, Mariah Meek and Andy Jasonowicz for reporting important bugs and for making useful suggestions for the improvement of the package.
+Many thanks to all of our colleagues for testing code and reporting bugs. In particular, we thank Mark Ravinet, Erin Landguth, Mariah Meek and Andy Jasonowicz for reporting important bugs and for making useful suggestions for the improvement of the package.
 
 \end{document}
