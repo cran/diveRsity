@@ -1,6 +1,8 @@
+#' @import ggplot2 shiny qgraph plotrix
+NULL
 ################################################################################
 ################################################################################
-##                              diveRsity v1.6.1                              ##  
+##                              diveRsity v1.7.6                              ##  
 ##                            by Kevin Keenan QUB                             ##  
 ##            An R package for the calculation of differentiation             ##
 ##              statistics and locus informativeness statistics               ##  
@@ -10,6 +12,7 @@
 ################################################################################
 
 # divPart, a wrapper function for the calculation of differentiation stats.
+#' @export
 divPart<-function(infile = NULL, outfile = NULL, gp = 3, pairwise = FALSE,
                   WC_Fst = FALSE, bs_locus = FALSE, bs_pairwise = FALSE, 
                   bootstraps = 0, plot = FALSE, parallel = FALSE){
@@ -26,8 +29,38 @@ divPart<-function(infile = NULL, outfile = NULL, gp = 3, pairwise = FALSE,
   para <- parallel
   pWise <- pairwise
   
+#   if(pWise || bspw){
+#     # note about fastDivPart
+#     msg <- paste("",
+#                  "NOTICE:",
+#                  "",
+#                  "As of version 1.6.0 of diveRsity, a new function, 'fastDivPart' is available!",
+#                  "Typically, this function is much faster than 'divPart', when computing",
+#                  "pairwise statistics, especially if the number of loci is much less than the",
+#                  "number of pairwise comparisons.",
+#                  "",
+#                  "If you would like to use this new function, please type 'y' and hit ENTER below.",
+#                  "Otherwise, type 'n' and hit ENTER, and your current analysis will be completed using",
+#                  "'divPart'.",
+#                  "Be aware that the struture of the output object for 'fastDivPart', is slightly",
+#                  "different from that of 'divPart!",                 
+#                  sep = "\n")
+#     cat(msg)
+#     ans <- readline("\nWould you like to use 'fastDivPart' to complete your analysis? ")
+#     if(ans == "y"){
+#       return(fastDivPart(infile = D, outfile = on, gp = gp, WC_Fst = fst,
+#                          pairwise = pWise, bs_locus = bsls, bs_pairwise = bspw,
+#                          bootstraps = bstrps, plot = plt, parallel = para))
+#     }
+#   }
+  
   # note about fastDivPart
-  cat("Notice: As of v1.6.0, fastDivPart, a faster version of divPart is \navailable. See ?fastDivPart for details!")
+  cat(paste("Notice: As of v1.6.0, fastDivPart, a faster version of divPart is",
+            "available. This function will eventually replace divPart and its",
+            "use future use is highly recommended, as divPart is no longer",
+            "maintained and some results may not be accurate.",
+            "",
+            "See ?fastDivPart for details!", sep = "\n"))
   
   ##############################################################################
   if(bsls==T && bstrps<2){
@@ -868,6 +901,8 @@ divPart<-function(infile = NULL, outfile = NULL, gp = 3, pairwise = FALSE,
           uci <- res[3,]
           list(mu = mu, lci = lci, uci = uci)
         })
+        
+        
         # create easy access data structure for each
         mu <- t(sapply(1:length(pwCi), function(i){
           return(pwCi[[i]]$mu)
@@ -1287,6 +1322,7 @@ divPart<-function(infile = NULL, outfile = NULL, gp = 3, pairwise = FALSE,
 ################################################################################
 # div.part: deprecated
 ################################################################################
+#' @export
 # div.part, a wrapper function for the calculation of differentiation stats.
 div.part<-function(infile = NULL, outfile = NULL, gp = 3, pairwise = FALSE,
                    WC_Fst = FALSE, bs_locus = FALSE, bs_pairwise = FALSE, 
@@ -2046,6 +2082,7 @@ plotter<-function(x,img="1200x600"){
 ################################################################################
 # inCalc, a wrapper function for the calculation of locus informativeness     #
 ################################################################################
+#' @export
 inCalc<-function(infile, outfile=NULL, gp=3, bs_locus=FALSE, bs_pairwise=FALSE,
                  bootstraps=0, plot=FALSE, parallel=FALSE){
   D=infile
@@ -2292,6 +2329,7 @@ inCalc<-function(infile, outfile=NULL, gp=3, bs_locus=FALSE, bs_pairwise=FALSE,
 ################################################################################
 # in.calc, a wrapper function for the calculation of locus informativeness     #
 ################################################################################
+#' @export
 in.calc<-function(infile, outfile = NULL, gp = 3, bs_locus = FALSE,
                   bs_pairwise = FALSE, bootstraps = 0, plot = FALSE,
                   parallel = FALSE){
@@ -2804,6 +2842,7 @@ in.bs<-function(x){
 ################################################################################
 # readGenepop.user, a usable function for basic population parameters          #
 ################################################################################
+#' @export
 readGenepop.user<- function (infile = NULL, gp = 3, bootstrap = FALSE) {
   .Deprecated(new = "readGenepop", msg = "This function name is no longer in use. Please use 'readGenepop' instead. \nSee ?readGenepop for usage details.", 
               old = "readGenepop.user")
@@ -2819,6 +2858,7 @@ readGenepop.user<- function (infile = NULL, gp = 3, bootstrap = FALSE) {
 ################################################################################
 # readGenepop, a usable function for basic population parameters               #
 ################################################################################
+#' @export
 readGenepop <- function (infile=NULL, gp=3, bootstrap=FALSE) {
   gp=gp
   infile=infile
@@ -3158,45 +3198,47 @@ pre.divLowMemory <- function(y){
     ###########################################################################
     # Master file reader
     ###########################################################################
-    fileReader <- function(infile){
-      if(typeof(infile)=="list"){
-        return(infile) 
-      } else if (typeof(infile)=="character"){
+    fileReader <- function (infile) {
+      if (typeof(infile) == "list") {
+        return(infile)
+      }
+      else if (typeof(infile) == "character") {
         flForm <- strsplit(infile, split = "\\.")[[1]]
         ext <- flForm[[length(flForm)]]
-        if(ext == "arp"){
+        if (ext == "arp") {
           arp2gen(infile)
           cat("Arlequin file converted to genepop format! \n")
           infile <- paste(flForm[1], ".gen", sep = "")
         }
         dat <- scan(infile, sep = "\n", what = "character", quiet = TRUE)
-        # find number of columns
         popLoc <- grep("^([[:space:]]*)pop([[:space:]]*)$", tolower(dat))
         no_col <- popLoc[1] - 1
-        if(popLoc[1] == 3){
-          locs <- unlist(strsplit(dat[2], split = c("\\,", "\\s+")))
-          dat <- c(dat[1], locs, dat[3:(length(dat)-3)])
+        if (popLoc[1] == 3) {
+          locs <- unlist(strsplit(dat[2], split = c("\\,", 
+                                                    "\\s+")))
+          dat <- c(dat[1], locs, dat[3:length(dat)])
         }
         popLoc <- grep("^([[:space:]]*)pop([[:space:]]*)$", tolower(dat))
         no_col <- popLoc[1] - 1
-        dat1 <- sapply(dat, function(x){
+        dat1 <- sapply(dat, function(x) {
           x <- unlist(strsplit(x, split = "\\s+"))
-          if(is.element("", x)){
-            x <- x[- (which(x == ""))]
+          if (is.element("", x)) {
+            x <- x[-(which(x == ""))]
           }
-          if(is.element(",", x)){
-            x <- x[- (which(x ==","))]
+          if (is.element(",", x)) {
+            x <- x[-(which(x == ","))]
           }
-          if(length(x) != 1 && length(x) != no_col){
+          if (length(x) != 1 && length(x) != no_col) {
             x <- paste(x, collapse = "")
           }
-          if(length(x) < no_col){
-            tabs <- paste(rep(NA, (no_col - length(x))), sep = "\t", 
-                          collapse = "\t")
+          if (length(x) < no_col) {
+            tabs <- paste(rep(NA, (no_col - length(x))), 
+                          sep = "\t", collapse = "\t")
             line <- paste(x, tabs, sep = "\t")
             line <- unlist(strsplit(line, split = "\t"))
             return(line)
-          } else {
+          }
+          else {
             return(x)
           }
         })
@@ -3989,6 +4031,7 @@ pre.divLowMemory <- function(y){
 ################################################################################
 # corPlot, plot the relationship between divPart stats and number of alleles   #
 ################################################################################
+#' @export
 corPlot<-function(x,y){
   x=x
   y=y
@@ -4061,6 +4104,7 @@ corPlot<-function(x,y){
 ################################################################################
 # difPlot, plot all pairwise population pairs                                  #
 ################################################################################
+#' @export
 difPlot <- function (x, outfile= NULL, interactive = FALSE) {
   x=x
   on=outfile
@@ -4386,7 +4430,7 @@ difPlot <- function (x, outfile= NULL, interactive = FALSE) {
 #        Input data should be given in the 2 or 3 digit genepop format        #
 #                       By Kevin Keenan, QUB, 2013                            #
 ###############################################################################
-
+#' @export
 chiCalc <- function(infile = NULL, outfile = NULL, gp = 3, minFreq = NULL){
   inputs <- list(infile = infile, gp = gp, bootstrap = FALSE)
   minFreq <- minFreq
@@ -4891,8 +4935,9 @@ chiCalc <- function(infile = NULL, outfile = NULL, gp = 3, minFreq = NULL){
 #
 ###############################################################################
 # try to include diveRsity online
+#' @export
 divOnline <- function(){
-    shiny::runApp(system.file('diveRsity-online', package = 'diveRsity'))
+    runApp(system.file('diveRsity-online', package = 'diveRsity'))
 }
 ################################################################################
 # END
@@ -4905,8 +4950,9 @@ divOnline <- function(){
 #
 #
 # try to include microPlexer app
+#' @export
 microPlexer <- function(){
-  shiny::runApp(system.file('microPlexer', package = 'diveRsity'))
+  runApp(system.file('microPlexer', package = 'diveRsity'))
 }
 ################################################################################
 # END
@@ -4921,6 +4967,7 @@ microPlexer <- function(){
 ################################################################################
 # Calculate basic stats
 ################################################################################
+#' @export
 divBasic <- function (infile = NULL, outfile = NULL, gp = 3) {
   infile =  infile
   gp = gp
@@ -5360,7 +5407,7 @@ fileReader <- function(infile){
     no_col <- popLoc[1] - 1
     if(popLoc[1] == 3){
       locs <- unlist(strsplit(dat[2], split = c("\\,", "\\s+")))
-      dat <- c(dat[1], locs, dat[3:(length(dat)-3)])
+      dat <- c(dat[1], locs, dat[3:length(dat)])
     }
     popLoc <- grep("^([[:space:]]*)pop([[:space:]]*)$", tolower(dat))
     no_col <- popLoc[1] - 1
@@ -5542,6 +5589,7 @@ fstWC<-function(x){
 ################################################################################
 # fstOnly: a memory efficient function to calculate WC Fst and Fit
 ################################################################################
+#' @export
 fstOnly <- function(infile = NULL, outfile = NULL, gp = 3, 
                     bs_locus = FALSE, bs_pairwise = FALSE, 
                     bootstraps = 0, parallel = FALSE){
@@ -6285,6 +6333,7 @@ fstOnly <- function(infile = NULL, outfile = NULL, gp = 3,
 ################################################################################
 # divRatio: calculates diversity standardised to yardstick popukation
 ################################################################################
+#' @export
 divRatio <- function(infile = NULL, outfile = NULL, gp = 3, pop_stats =  NULL, 
                      refPos = NULL, bootstraps = 1000,  parallel = FALSE) {
   popStats = pop_stats
@@ -6915,6 +6964,7 @@ arHex <- function(x){
 ################################################################################
 # bigDivPart - a wrapper function for the calculation of diff stats
 ################################################################################
+#' @export
 bigDivPart <- function(infile = NULL, outfile = NULL, WC_Fst = FALSE,
                        format = NULL){
   
@@ -7524,6 +7574,7 @@ bigPreDiv <- function(prePopList, bs = FALSE, nloci, npops,
 ################################################################################
 # arp2gen: arlequin file conversion to genepop
 ################################################################################
+#' @export
 arp2gen <- function(infile){
   # define a fastscan function
   fastScan <- function(fname){
@@ -7674,7 +7725,7 @@ arp2gen <- function(infile){
 # a presented in the paper 'Directional genetic differentiation and
 # asymmetric migration Lisa Sundqvist, Martin Zackrisson & David Kleinhans,
 # 2013, arXiv pre-print (http://arxiv.org/abs/1304.0118)'
-
+#' @export
 divMigrate <- function(infile = NULL, stat = "d_jost"){
   # check file format
   cat("Caution! The method used in this function is still under development. \n")
@@ -8242,6 +8293,7 @@ pwDivCalc <- function(x, pw, npops){
 # Kevin Keenan 2013
 
 # divPart, a wrapper function for the calculation of differentiation stats.
+#' @export
 fastDivPart<-function(infile = NULL, outfile = NULL, gp = 3, pairwise = FALSE,
                       WC_Fst = FALSE, bs_locus = FALSE, bs_pairwise = FALSE, 
                       bootstraps = 0, plot = FALSE, parallel = FALSE){
@@ -8388,22 +8440,22 @@ fastDivPart<-function(infile = NULL, outfile = NULL, gp = 3, pairwise = FALSE,
         # Load dependencies
         require("xlsx")
         # standard stats
-        write.xlsx(ot1,file=paste(of,"[divPart].xlsx",sep=""),
+        write.xlsx(ot1,file=paste(of,"[fastDivPart].xlsx",sep=""),
                    sheetName="Standard_stats",col.names=T,
                    row.names=F,append=F)
         # Estimated stats
-        write.xlsx(ot2,file=paste(of,"[divPart].xlsx",sep=""),
+        write.xlsx(ot2,file=paste(of,"[fastDivPart].xlsx",sep=""),
                    sheetName="Estimated_stats",col.names=T,
                    row.names=F,append=T)
       } else {
         # text file alternatives
-        std<-file(paste(of,"Standard-stats[divPart].txt",sep=""), "w")
+        std<-file(paste(of,"Standard-stats[fastDivPart].txt",sep=""), "w")
         cat(paste(colnames(ot1),sep=""),"\n",sep="\t",file=std)
         for(i in 1:nrow(ot1)){
           cat(ot1[i,],"\n",file=std,sep="\t")
         }
         close(std)
-        est<-file(paste(of,"Estimated-stats[divPart].txt",sep=""),"w")
+        est<-file(paste(of,"Estimated-stats[fastDivPart].txt",sep=""),"w")
         cat(paste(colnames(ot2),sep=""),"\n",sep="\t",file=est)
         for(i in 1:nrow(ot2)){
           cat(ot2[i,],"\n",file=est,sep="\t")
@@ -8710,12 +8762,12 @@ fastDivPart<-function(infile = NULL, outfile = NULL, gp = 3, pairwise = FALSE,
       }
       if(!is.null(on)){
         if(write_res==TRUE){
-          write.xlsx(bs_out,file=paste(of,"[divPart].xlsx",sep=""),
+          write.xlsx(bs_out,file=paste(of,"[fastDivPart].xlsx",sep=""),
                      sheetName="Locus_bootstrap",col.names=F,
                      row.names=F,append=T)
         } else {
           # text file alternatives
-          bts<-file(paste(of,"Locus-bootstrap[divPart].txt",sep=""), "w")
+          bts<-file(paste(of,"Locus-bootstrap[fastDivPart].txt",sep=""), "w")
           cat(paste(colnames(bs_out),sep=""),"\n",sep="\t",file=bts)
           for(i in 1:nrow(bs_out)){
             cat(bs_out[i,],"\n",file=bts,sep="\t")
@@ -9013,9 +9065,9 @@ fastDivPart<-function(infile = NULL, outfile = NULL, gp = 3, pairwise = FALSE,
     # END - pwDivCalc
     ############################################################################
     # Calculate Weir & Cockerham's F-statistics (optimised)
-    ##########################################################################
+    ############################################################################
     # pwFstWC: a function co calculate weir and cockerhams fis, fit, and fst
-    ##########################################################################
+    ############################################################################
     pwFstWC<-function(rdat){
       #   rdat <- diveRsity::readGenepop("KK_test1v2.gen")
       pw <- combn(rdat$npops, 2)
@@ -9062,15 +9114,27 @@ fastDivPart<-function(infile = NULL, outfile = NULL, gp = 3, pairwise = FALSE,
         return(do.call("rbind", x))
       })
       # identify unique genotypes
-      genot <- lapply(allGenot, function(x){
-        return(apply(x, 2, function(y){
-          unique(na.omit(y))
-        }))
-      })
+      #   genot <- lapply(allGenot, function(x){
+      #     return(apply(x, 2, function(y){
+      #       unique(na.omit(y))
+      #     }))
+      #   })
       # count number of genotypes per pw per loc
+      
       genoCount <- lapply(allGenot, function(x){
-        apply(x, 2, table)
+        if(NCOL(x) == 1){
+          return(list(table(x)))
+        } else {
+          lapply(1:ncol(x), function(i) table(x[,i]))
+        }
       })
+      
+      
+      #   genoCount <- lapply(allGenot, function(x){
+      #     lapply(split(x,seq(NCOL(x))),table) # accounts for single loci
+      #     #apply(x, 2, table)
+      #   })
+      
       
       # function to count heterozygotes
       htCount <- function(x){
@@ -9140,13 +9204,13 @@ fastDivPart<-function(infile = NULL, outfile = NULL, gp = 3, pairwise = FALSE,
       #   })
       
       fstatCal <- function(indT, indtyp, hBar, nBar, p, pw, npops){
-        #     indT=indTypTot[[28]]
-        #     indtyp=rdat$indtyp[[28]]
-        #     hBar <- hBar[[28]]
-        #     nBar <- nBar[[28]]
-        #     p <- p[[28]]
-        #     pw <- pw
-        #     npops <- rdat$npops
+        #         indT=indTypTot[[1]]
+        #         indtyp=rdat$indtyp[[1]]
+        #         hBar <- hBar[[1]]
+        #         nBar <- nBar[[1]]
+        #         p <- p[[1]]
+        #         pw <- pw
+        #         npops <- rdat$npops
         indLocPwSqSum <- sapply(seq_along(pw[1,]), function(i){
           return(sum(indtyp[pw[,i]]^2))
         })
@@ -9187,17 +9251,27 @@ fastDivPart<-function(infile = NULL, outfile = NULL, gp = 3, pairwise = FALSE,
         a <- lapply(seq_along(s2), function(i){
           return(nBar[[i]]*(s2[[i]]-(A[[i]]-(hBar[[i]]/4))/(nBar[[i]]-1))/nC[[i]])
         })
+        #     a <- lapply(seq_along(s2), function(i){
+        #       return(a[[i]][idx[[i]]])
+        #     })
         b <- lapply(seq_along(A), function(i){
-          return(nBar[[i]]*(A[[i]]-(2*(nBar[[i]]-1))*hBar[[i]]/(4*nBar[[i]]))/(nBar[[i]]-1))
+          return((nBar[[i]]/(nBar[[i]]-1))*(A[[i]]-((2*nBar[[i]]-1)/(4*nBar[[i]]))*hBar[[i]]))
+          #return((nBar[[i]]/(nBar[[i]]-1))*(A[[i]]-(2*(nBar[[i]]-1))*hBar[[i]]/(4*nBar[[i]])))
         })
-        c <- lapply(seq_along(A), function(i){
+        #     b <- lapply(seq_along(A), function(i){
+        #       return(b[[i]][idx[[i]]])
+        #     })
+        cdat <- lapply(seq_along(A), function(i){
           return(hBar[[i]]/2)
         })
+        #     cdat <- lapply(seq_along(A), function(i){
+        #       return(cdat[[i]][idx[[i]]])
+        #     })
         A <- sapply(A, sum)
         a <- sapply(a, sum)
         b <- sapply(b, sum)
-        c <- sapply(c, sum)
-        theta <- a/(a+b+c)
+        cdat <- sapply(cdat, sum)
+        theta <- a/(a+b+cdat)
         pwMat <- matrix(ncol = npops, nrow = npops)
         aMat <- matrix(ncol = npops, nrow = npops)
         bMat <- matrix(ncol = npops, nrow = npops)
@@ -9206,7 +9280,7 @@ fastDivPart<-function(infile = NULL, outfile = NULL, gp = 3, pairwise = FALSE,
           pwMat[pw[2,i], pw[1,i]] <- theta[i]
           aMat[pw[2,i], pw[1,i]] <- a[i]
           bMat[pw[2,i], pw[1,i]] <- b[i]
-          cMat[pw[2,i], pw[1,i]] <- c[i]
+          cMat[pw[2,i], pw[1,i]] <- cdat[i]
         }
         pwMat[is.nan(pwMat)] <- NA
         aMat[is.nan(aMat)] <- NA
@@ -9224,12 +9298,11 @@ fastDivPart<-function(infile = NULL, outfile = NULL, gp = 3, pairwise = FALSE,
                       SIMPLIFY = FALSE)
       return(pwLoc)
     }
-    ################################################################################
+    ############################################################################
     # END - pwDivCalc
-    ################################################################################
-    ################################################################################
+    ############################################################################
     # pwBasicCalc: a small function for calculating pairwise ht and hs 
-    ################################################################################
+    ############################################################################
     pwBasicCalc <- function(af, sHarm, pw, npops){
       ht <- matrix(ncol = npops, nrow = npops)
       hs <- matrix(ncol = npops, nrow = npops)
@@ -9254,9 +9327,9 @@ fastDivPart<-function(infile = NULL, outfile = NULL, gp = 3, pairwise = FALSE,
       list(hsEst = hsEst,
            htEst = htEst)
     }
-    ################################################################################
+    ############################################################################
     # END - pwBasicCalc
-    ################################################################################
+    ############################################################################
     
     # define locus stat calculators
     gstCalc <- function(ht, hs){
@@ -9285,9 +9358,9 @@ fastDivPart<-function(infile = NULL, outfile = NULL, gp = 3, pairwise = FALSE,
       }
       return(lhrm)
     }
-    ################################################################################
+    ############################################################################
     # pwDivCalc: a small function for calculating pairwise ht and hs 
-    ################################################################################
+    ############################################################################
     pwDivCalc <- function(x, pw, npops){
       ht <- matrix(ncol = npops, nrow = npops)
       hs <- matrix(ncol = npops, nrow = npops)
@@ -9304,9 +9377,9 @@ fastDivPart<-function(infile = NULL, outfile = NULL, gp = 3, pairwise = FALSE,
       list(ht = ht, 
            hs = hs)
     }
-    ################################################################################
+    ############################################################################
     # END - pwDivCalc
-    ################################################################################
+    ############################################################################
     
     ############################################################################
     ############################################################################
@@ -9378,12 +9451,12 @@ fastDivPart<-function(infile = NULL, outfile = NULL, gp = 3, pairwise = FALSE,
           # write data to excel
           # Load dependencies
           # pw stats
-          write.xlsx(outobj, file = paste(of, "[divPart].xlsx", sep=""),
+          write.xlsx(outobj, file = paste(of, "[fastDivPart].xlsx", sep=""),
                      sheetName = "Pairwise-stats", col.names = FALSE,
                      row.names = FALSE, append = TRUE)
         } else {
           # text file alternatives
-          pw_outer <- file(paste(of, "Pairwise-stats[divPart].txt", sep=""), 
+          pw_outer <- file(paste(of, "Pairwise-stats[fastDivPart].txt", sep=""), 
                            "w")
           for(i in 1:nrow(outobj)){
             cat(outobj[i,], "\n", file = pw_outer, sep = "\t")
@@ -9402,10 +9475,11 @@ fastDivPart<-function(infile = NULL, outfile = NULL, gp = 3, pairwise = FALSE,
         library(parallel)
         cl <- makeCluster(detectCores())
         clusterExport(cl, c("pwCalc", "fst", "D", "readGenepopX",
-                            "fileReader", "pwFstWC"), 
+                            "fileReader", "pwFstWC", "pwHarmonic",
+                            "pwBasicCalc", "djostCalc"), 
                       envir = environment())
         pwBsStat <- parLapply(cl, 1:bstrps, function(...){
-          return(pwCalc(infile, fst, bs = TRUE))
+          return(pwCalc(infile = D, fst, bs = TRUE))
         })
         stopCluster(cl)
       } else {
@@ -9413,6 +9487,8 @@ fastDivPart<-function(infile = NULL, outfile = NULL, gp = 3, pairwise = FALSE,
           return(pwCalc(D, fst, bs = TRUE))
         })
       }
+      
+      
       # seperate each stat
       
       gstEst <- lapply(pwBsStat, function(x){
@@ -9478,24 +9554,57 @@ fastDivPart<-function(infile = NULL, outfile = NULL, gp = 3, pairwise = FALSE,
         rm(z) 
       } else {
         # tidy up
-        rm(dEst, gstEst, gstEstHed)
         z <- gc()
         rm(z) 
       }
       
       # organise data
+      # calculate bias for cis
+      biasCalc <- function(param, bs_param, pw){
+        bias <- param
+        for(i in 1:ncol(pw)){
+          dat <- bs_param[pw[2,i], pw[1,i], ]
+          t0 <- param[pw[2,i], pw[1,i]]
+          mnBS <- mean(dat , na.rm = TRUE) - t0
+          bs_param[pw[2,i], pw[1,i], ] <- bs_param[pw[2,i], pw[1,i], ] - mnBS
+        }
+        return(bs_param)
+      }
+      
+      # try adjusting bootstrapped estimate using bias
+      
+      bcStats <- mapply(biasCalc, param = pwMatListOut, bs_param = stats, 
+                        MoreArgs = list(pw = pw), SIMPLIFY = FALSE)
+      
       # calculate the upper and lower 95% ci
       lowCI <- lapply(stats, function(x){
         return(apply(x, c(1,2), quantile, probs = 0.025, na.rm = TRUE))
       })
       
+      # bias corrected
+      bcLowCI <- lapply(bcStats, function(x){
+        return(apply(x, c(1,2), quantile, probs = 0.025, na.rm = TRUE))
+      })
+
+      
       upCI <- lapply(stats, function(x){
         return(apply(x, c(1,2), quantile, probs = 0.975, na.rm = TRUE))
       })
       
+      # bias corrected
+      bcHighCI <- lapply(bcStats, function(x){
+        return(apply(x, c(1,2), quantile, probs = 0.975, na.rm = TRUE))
+      })
+      
+      
       statMean <- lapply(stats, function(x){
         return(apply(x, c(1,2), mean, na.rm = TRUE))
       })
+      
+      # bias corrected
+      bcStatMean <- lapply(bcStats, function(x){
+        return(apply(x, c(1,2), mean, na.rm = TRUE))
+      }) 
       
       # tidy up
       rm(stats)
@@ -9504,18 +9613,23 @@ fastDivPart<-function(infile = NULL, outfile = NULL, gp = 3, pairwise = FALSE,
       
       # organize ci and mean into output structure
       pw <- combn(ncol(lowCI[[1]]), 2)
-      outOrg <- function(x, y, z, pw, pwNms){
-        out <- matrix(ncol = 3, nrow = ncol(pw))
-        colnames(out) <- c("mean", "Lower_95%CI", "Upper_95%CI")
+      outOrg <- function(t0 ,t1 , t2, l1, l2, u1, u2, pw, pwNms){
+        out <- matrix(ncol = 7, nrow = ncol(pw))
+        colnames(out) <- c("actual", "mean", "BC_mean", "Lower_95%CI", 
+                           "Upper_95%CI", "BC_Lower_95%CI", "BC_Upper_95%CI")
         rownames(out) <- pwNms
         for(i in 1:ncol(pw)){
           idx <- as.vector(rev(pw[,i]))
-          out[i,] <- c(y[idx[1], idx[2]], x[idx[1], idx[2]], z[idx[1], idx[2]])
+          out[i,] <- c(t0[idx[1], idx[2]], t1[idx[1], idx[2]],
+                       t2[idx[1], idx[2]], l1[idx[1], idx[2]],
+                       l2[idx[1], idx[2]], u1[idx[1], idx[2]],
+                       u2[idx[1], idx[2]])
         }
         
         return(out)
       }
-      outputStat <- mapply(FUN = outOrg, lowCI, statMean, upCI, 
+      outputStat <- mapply(FUN = outOrg, pwMatListOut, statMean,
+                           bcStatMean, lowCI, upCI, bcLowCI, bcHighCI,  
                            MoreArgs = list(pw = pw, pwNms = pw_nms),
                            SIMPLIFY = FALSE)
       
@@ -9527,7 +9641,7 @@ fastDivPart<-function(infile = NULL, outfile = NULL, gp = 3, pairwise = FALSE,
       }
       
       # define pwWrite for output
-      sprt <- lapply(names(pw_res), FUN = `c`, c("", "", ""))
+      sprt <- lapply(names(pw_res), FUN = `c`, c("", "", "", "", "", "", ""))
       pwWrite <- lapply(pw_res, function(x){
         comparison <- rownames(x)
         cols <- colnames(x)
@@ -9542,12 +9656,12 @@ fastDivPart<-function(infile = NULL, outfile = NULL, gp = 3, pairwise = FALSE,
       # write results
       if(!is.null(on)){
         if(write_res==TRUE){
-          write.xlsx(pwWrite, file = paste(of, "[divPart].xlsx", sep = ""),
+          write.xlsx(pwWrite, file = paste(of, "[fastDivPart].xlsx", sep = ""),
                      sheetName = "Pairwise_bootstrap", col.names = FALSE,
                      row.names = FALSE, append = TRUE)
         } else {
           # text file alternatives
-          pw_bts <- file(paste(of, "Pairwise-bootstrap[divPart].txt", sep = ""),
+          pw_bts <- file(paste(of, "Pairwise-bootstrap[fastDivPart].txt", sep = ""),
                          "w")
           #cat(paste(colnames(pw_bs_out),sep=""),"\n",sep="\t",file=pw_bts)
           for(i in 1:nrow(pwWrite)){
@@ -9594,8 +9708,8 @@ fastDivPart<-function(infile = NULL, outfile = NULL, gp = 3, pairwise = FALSE,
       
       plot.extras_pw[[1]]=c("points(pw_res[[1]][pwso[[1]],1],
                             pch=15,col='black',cex=1);
-                            arrows(1:length(pwso[[1]]),pw_res[[1]][pwso[[1]],2],
-                            1:length(pwso[[1]]),pw_res[[1]][pwso[[1]],3],code=3,
+                            arrows(1:length(pwso[[1]]),pw_res[[1]][pwso[[1]],6],
+                            1:length(pwso[[1]]),pw_res[[1]][pwso[[1]],6],code=3,
                             angle=90,length=0.05,lwd=0.1);
                             abline(h=as.numeric(plot_data321[5]),
                             lwd=1,lty=2,col='red')")
@@ -9619,8 +9733,8 @@ fastDivPart<-function(infile = NULL, outfile = NULL, gp = 3, pairwise = FALSE,
       
       plot.extras_pw[[2]]=c("points(pw_res[[2]][pwso[[2]],1],
                             pch=15,col='black',cex=1);
-                            arrows(1:length(pwso[[2]]),pw_res[[2]][pwso[[2]],2],
-                            1:length(pwso[[2]]),pw_res[[2]][pwso[[2]],3],code=3,
+                            arrows(1:length(pwso[[2]]),pw_res[[2]][pwso[[2]],6],
+                            1:length(pwso[[2]]),pw_res[[2]][pwso[[2]],7],code=3,
                             angle=90,length=0.05,lwd=0.1);
                             abline(h=as.numeric(plot_data321[6]),
                             lwd=1,lty=2,col='red')")
@@ -9643,8 +9757,8 @@ fastDivPart<-function(infile = NULL, outfile = NULL, gp = 3, pairwise = FALSE,
       
       plot.extras_pw[[3]]=c("points(pw_res[[3]][pwso[[3]],1],
                             pch=15,col='black',cex=1);
-                            arrows(1:length(pwso[[3]]),pw_res[[3]][pwso[[3]],2],
-                            1:length(pwso[[3]]),pw_res[[3]][pwso[[3]],3],code=3,
+                            arrows(1:length(pwso[[3]]),pw_res[[3]][pwso[[3]],6],
+                            1:length(pwso[[3]]),pw_res[[3]][pwso[[3]],7],code=3,
                             angle=90,length=0.05,lwd=0.1);
                             abline(h=as.numeric(plot_data321[7]),
                             lwd=1,lty=2,col='red')")
@@ -9667,8 +9781,8 @@ fastDivPart<-function(infile = NULL, outfile = NULL, gp = 3, pairwise = FALSE,
         
         plot.extras_pw[[4]]=c("points(pw_res[[4]][pwso[[4]],1],
                               pch=15,col='black',cex=1);
-                              arrows(1:length(pwso[[4]]),pw_res[[4]][pwso[[4]],2],
-                              1:length(pwso[[4]]),pw_res[[4]][pwso[[4]],3],code=3,
+                              arrows(1:length(pwso[[4]]),pw_res[[4]][pwso[[4]],6],
+                              1:length(pwso[[4]]),pw_res[[4]][pwso[[4]],7],code=3,
                               angle=90,length=0.05,lwd=0.1);
                               abline(h=as.numeric(plot_data321[7]),
                               lwd=1,lty=2,col='red')")
@@ -9683,10 +9797,10 @@ fastDivPart<-function(infile = NULL, outfile = NULL, gp = 3, pairwise = FALSE,
         fn_pre_pw[[4]]<-names(pw_res)[4]
       }
     }
-    ############################### Bootstrap end ################################
+    ############################### Bootstrap end ##############################
     
     
-    ################################# Plot resuts ################################
+    ################################# Plot resuts ###############################
     #make necessary data available
     if(plt==TRUE && plot_res==TRUE && bsls==TRUE && bspw==TRUE){
       pl<-list(bs_res=bs_res,
@@ -9811,7 +9925,7 @@ fastDivPart<-function(infile = NULL, outfile = NULL, gp = 3, pairwise = FALSE,
 ################################################################################
 # haploDiv function for calculating various statistics from haploid data
 # try diploidization first
-
+#' @export
 haploDiv <- function(infile = NULL, outfile = NULL, pairwise = FALSE, 
                      bootstraps = 0){
   if(bootstraps != 0){
@@ -9941,7 +10055,8 @@ haploDiv <- function(infile = NULL, outfile = NULL, pairwise = FALSE,
     cat("Bootstrapped 95% Confidence intervals for Weir & Cockerham's (1984) Fst",
         "\n", sep = "\t", file = fl)
     cat("", "\n", file = fl)
-    cat(c("", "Mean", "Lower", "Upper"), "\n", sep = "\t", file = fl)
+    cat(c("","actual", "mean", "BC_mean", "lower", "upper", 
+          "BC_lower", "BC_upper"), "\n", sep = "\t", file = fl)
     for(i in 1:nrow(output$bs_pairwise)){
       cat(c(rownames(output$bs_pairwise)[i], round(output$bs_pairwise[i, ], 4)), 
           "\n", sep = "\t", file = fl)

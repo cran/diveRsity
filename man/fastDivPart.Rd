@@ -10,7 +10,8 @@ Genetic differentiation statistics and their estimators
 }
 
 \details{
-All results will be written to a user defined folder ("working_directory/outfile"). The format of outputs will vary depending on the availability of the package \code{'xlsx'} in the users local package library. If \code{'xlsx'} is available, results will be written to an Excel workbook. If \code{'xlsx'} is not available, results will be written to \code{.txt} files.
+All results will be written to a user defined folder ("working_directory/outfile"). The format of outputs will vary depending on the availability of the package \code{'xlsx'} in the users local package library. If \code{'xlsx'} is available, results will be written to an Excel workbook. If \code{'xlsx'} is not available, results will be written to \code{.txt} files. 
+Multi-locus estimates of Weir and Cockerham's theta are calculated as per Weir and Cockerham, 1984.
 }
 
 \usage{
@@ -56,7 +57,7 @@ fastDivPart(infile = NULL, outfile = NULL, gp = 3,
 
 \item{bs_locus}{A list containing six matrices of locus values for \emph{Gst}, \emph{G'st}, \emph{D(Jost)}, \emph{Gst-(est)}, \emph{G'st-(est)}, and \emph{D(Jost)-(est)} along with their respective 95\% confidence interval.}
 
-\item{bs_pairwise}{A list containing three-four matrices (depending on whether Weir & Cockerham's Fst is calculated) of pairwise values for \emph{Gst}, \emph{G'st}, \emph{D(Jost)}, \emph{Gst-(est)}, \emph{G'st-(est)}, and \emph{D(Jost)-(est)} along with their respective 95\% confidence intervals.}
+\item{bs_pairwise}{A list containing three-four matrices (depending on whether Weir & Cockerham's Fst is calculated) of pairwise values for \emph{Gst}, \emph{G'st}, \emph{D(Jost)}, \emph{Gst-(est)}, \emph{G'st-(est)}, and \emph{D(Jost)-(est)} along with their respective 95\% confidence intervals, including bias corrected 95\% confidence intervals.}
 }
 
 \references{
