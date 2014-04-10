@@ -6,7 +6,7 @@ A function to plot the relationship between Gst, G'st, Theta, D (Jost) and the n
 }
 
 \description{
-\code{corPlot} uses the information calculated by \code{divPart} and \code{readGenepop} to plot and calculate the relationship between Gst, G'st, Theta, D (Jost) and the number of alleles per locus. This information can then be used to assess the likelyhood that data derived from the loci is suitable for the calculation of population demography. This is based on the assumption that where \emph{u} > \emph{m}, demographic process are obscured by mutation.
+\code{corPlot} uses the information calculated by \code{divPart} and \code{readGenepop} to plot and calculate the relationship between Gst, G'st, Theta, D (Jost) and the number of alleles per locus. This information can then be used to assess the likelihood that data derived from the loci is suitable for the calculation of population demography. This is based on the assumption that where \emph{u} > \emph{m}, demographic process are obscured by mutation.
 }
 
 \details{
@@ -20,11 +20,11 @@ corPlot(x, y)
 \arguments{
 
 \item{x}{
-Results object returned from the function \code{readGenepop.user}
+Results object returned from the function \code{readGenepop}
 }
 
 \item{y}{
-Results object returned from the function \code{divPart}
+Results object returned from the function \code{fastDivPart}
 }
 }
 
