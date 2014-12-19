@@ -14,18 +14,23 @@ The function will except both Arlequin (.arp) genotype and genepop (.gen/.txt) f
 }
 
 \usage{
-divMigrate(infile = NULL, nbs = 0, filter_threshold = 0, plot = FALSE, 
+divMigrate(infile = NULL, outfile = NULL, boots = 0, stat = "all", 
+           filter_threshold = 0, plot_network = FALSE, 
            plot_col = "darkblue", para = FALSE)
 }
 \arguments{
 
 \item{infile}{Input genepop file name or path.}
 
-\item{nbs}{The number of bootstrap iteration to carry out for calculating mean relative migration and 95\% confidence intervals.}
+\item{outfile}{String prefix to be added to the results directory. If left \code{NULL}, no networks will be written to file.}
+
+\item{boots}{The number of bootstrap iteration to carry out for calculating mean relative migration and 95\% confidence intervals.}
+
+\item{stat}{A character string indicating which statistic should be used to estimate relative migration between populations. The argument accepts one of the following: "d" (Jost's D), "gst" (Nei's Gst), "Nm" (Alcala et al, 2014) or "all" (all of the preceeding statistics; default).}
 
 \item{filter_threshold}{The minimum relative migration value for which edges in the networks should be displayed.}
 
-\item{plot}{A logical argument, specifying whether migration results should be plotted in a network.}
+\item{plot_network}{A logical argument, specifying whether migration results should be plotted in a network.}
 
 \item{plot_col}{Defines the colour of edges in networks. Default is set to "\code{darkblue}".}
 
@@ -35,9 +40,9 @@ divMigrate(infile = NULL, nbs = 0, filter_threshold = 0, plot = FALSE,
 
 \value{
 
-\item{relMig}{relative migration matrix}
+\item{Relative migration}{Relative migration matrices}
 
-\item{bsRelMig}{If \code{nbs > 0} a relative migration matrix is calculated as the mean of bootstrap matrices.}
+\item{Significant directional migration}{If \code{nbs > 0} the significance of pairwise relative migration is tested (i.e. non-overlapping 95\% CIs). All non-significant values in the standard relative migration matrices are replaced with 0.}
 
 }
 
@@ -47,6 +52,9 @@ Lisa Sundqvist, M.Z. & Kleinhans, D., 2013. Directional genetic differentiation 
 Rousset, F., ``genepop'007: a complete re-implementation of the genepop
 software for Windows and Linux.,'' Molecular ecology resources, vol. 8,
 no. 1, pp. 103-6, (2008).
+
+Alcala, N., Goudet, J., Vuilleumier, S., 2014, On the transition of genetic differentiation from isolation to panmixia: What we can learn from Gst and D, Theoretical Population Biology, Vol 93, pp75-84.
+
 }
 
 \author{
