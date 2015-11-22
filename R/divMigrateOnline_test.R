@@ -1,6 +1,6 @@
 # divMigrateOnline function definition for online application
 # function definition ----
-divMigrateOnline <- function(infile = NULL, nbs = 0, stat = "all", 
+divMigrateOnline_test <- function(infile = NULL, nbs = 0, stat = "all", 
                              para = FALSE, true.nm = FALSE, alpha = 0.05){
   # preabmle ----
   #nbs <- 10
@@ -11,7 +11,7 @@ divMigrateOnline <- function(infile = NULL, nbs = 0, stat = "all",
   #bsFun <- diveRsity:::bsFun
   #pwHt <- diveRsity:::pwHt
   #rgp <- diveRsity:::rgp
-  #nbs <- 500
+  #nbs <- 999
   #stat = "all"
   #filter_threshold <- 0
   #plot_network = TRUE
@@ -153,57 +153,90 @@ divMigrateOnline <- function(infile = NULL, nbs = 0, stat = "all",
       })
     }
     
-    # convert stats to arrays
-    #if(stat == "d"){
-      bsD <- sapply(bsStat, "[[", "dRel", simplify = "array")
-    #}
-    #if(stat == "gst"){
-      bsG <- sapply(bsStat, "[[", "gRel", simplify = "array")
-    #}
-    #if(stat == "Nm"){
-      bsNm <- sapply(bsStat, "[[", "nmRel", simplify = "array")
-    #}
+    # convert stats to arrays and test for differences
+    adjAlpha <- alpha/ncol(pw)
+    quants <- c(alpha/2, 1-(alpha/2), adjAlpha/2, 1-(adjAlpha/2))
     
-    # function for significant difference determination
-    sigDiff <- function(x, y){
-      if(x[1] < y[1] && x[2] < y[1]){
-        return(TRUE)
-      } else {
-        return(FALSE)
+    # D jost
+    bsD <- sapply(bsStat, "[[", "dRel", simplify = "array")
+    mean_diff <- apply(bsD, 3, function(x){
+      x[lower.tri(x)] - x[upper.tri(x)]
+    })
+    mean_diff <- cbind(mean_diff, 
+                       dRel[lower.tri(dRel)] - dRel[upper.tri(dRel)])
+    dCI <- t(apply(mean_diff, 1, function(x){
+      mn <- mean(x, na.rm = TRUE)
+      names(mn) <- "mean"
+      ci <- quantile(x, probs = quants, na.rm = TRUE)
+      names(ci) <- c("lo", "hi", "adjlo", "adjhi")
+      c(mn, ci)
+    }))
+    sigMatD <- matrix(FALSE, nrow = ncol(dRel), ncol(dRel))
+    diag(sigMatD) <- NA
+    for(i in 1:ncol(pw)){
+      if(dCI[i,"lo"] > 0L && dCI[i, "mean"] > 0L) {
+        sigMatD[pw[2,i], pw[1, i]] <- TRUE
+      } else if(dCI[i,"lo"] > 0L && dCI[i, "mean"] < 0L) {
+        sigMatD[pw[1,i], pw[2, i]] <- TRUE
       }
     }
-    #if(stat == "d"){
-      sigMatD <- matrix(NA, nrow = ncol(dRel), ncol(dRel))
-      for(i in 1:ncol(pw)){
-        p1 <- quantile(bsD[pw[1,i], pw[2,i],], prob = c(alpha/2, 1-(alpha/2)))
-        p2 <- quantile(bsD[pw[2,i], pw[1,i],], prob = c(alpha/2, 1-(alpha/2)))
-        sigMatD[pw[2,i], pw[1,i]] <- sigDiff(p1, p2)
-        sigMatD[pw[1,i], pw[2,i]] <- sigDiff(p2, p1)
+    dRelbs <- dRel
+    dRelbs[!sigMatD] <- 0
+    
+    # Gst
+    bsG <- sapply(bsStat, "[[", "gRel", simplify = "array")
+    mean_diff <- apply(bsG, 3, function(x){
+      x[lower.tri(x)] - x[upper.tri(x)]
+    })
+    mean_diff <- cbind(mean_diff, 
+                       gRel[lower.tri(gRel)] - gRel[upper.tri(gRel)])
+    gCI <- t(apply(mean_diff, 1, function(x){
+      mn <- mean(x, na.rm = TRUE)
+      names(mn) <- "mean"
+      ci <- quantile(x, probs = quants, na.rm = TRUE)
+      names(ci) <- c("lo", "hi", "adjlo", "adjhi")
+      c(mn, ci)
+    }))
+    sigMatG <- matrix(FALSE, nrow = ncol(gRel), ncol(gRel))
+    diag(sigMatG) <- NA
+    for(i in 1:ncol(pw)){
+      if(gCI[i,"lo"] >0L && gCI[i, "mean"] > 0L) {
+        sigMatG[pw[2,i], pw[1, i]] <- TRUE
+      } else if(gCI[i,"lo"] >0L && gCI[i, "mean"] < 0L) {
+        sigMatG[pw[1,i], pw[2, i]] <- TRUE
       }
-      dRelbs <- dRel
-      dRelbs[!sigMatD] <- 0
-    #}
-    #if(stat == "gst"){
-      sigMatG <- matrix(NA, nrow = ncol(gRel), ncol(gRel))
-      for(i in 1:ncol(pw)){
-        p1 <- quantile(bsG[pw[1,i], pw[2,i],], prob = c(alpha/2, 1-(alpha/2)))
-        p2 <- quantile(bsG[pw[2,i], pw[1,i],], prob = c(alpha/2, 1-(alpha/2)))
-        sigMatG[pw[2,i], pw[1,i]] <- sigDiff(p1, p2)
-        sigMatG[pw[1,i], pw[2,i]] <- sigDiff(p2, p1)
+    }
+    gRelbs <- gRel
+    gRelbs[!sigMatG] <- 0
+    
+    # Nm
+    bsNm <- sapply(bsStat, "[[", "nmRel", simplify = "array")
+    mean_diff <- apply(bsNm, 3, function(x){
+      x[lower.tri(x)] - x[upper.tri(x)]
+    })
+    mean_diff <- cbind(mean_diff, 
+                       nmRel[lower.tri(nmRel)] - nmRel[upper.tri(nmRel)])
+    nmCI <- t(apply(mean_diff, 1, function(x){
+      mn <- mean(x, na.rm = TRUE)
+      names(mn) <- "mean"
+      ci <- quantile(x, probs = quants, na.rm = TRUE)
+      names(ci) <- c("lo", "hi", "adjlo", "adjhi")
+      c(mn, ci)
+    }))
+    sigMatNm <- matrix(FALSE, nrow = ncol(nmRel), ncol(nmRel))
+    diag(sigMatNm) <- NA
+    for(i in 1:ncol(pw)){
+      if(nmCI[i,"lo"] > 0L && nmCI[i, "mean"] > 0L) {
+        sigMatNm[pw[2,i], pw[1, i]] <- TRUE
+      } else if(nmCI[i,"lo"] > 0L && nmCI[i, "mean"] < 0L) {
+        sigMatNm[pw[1,i], pw[2, i]] <- TRUE
       }
-      gRelbs <- gRel
-      gRelbs[!sigMatG] <- 0
-    #}
-    #if(stat == "Nm"){
-      sigMatNm <- matrix(NA, nrow = ncol(nmRel), ncol(nmRel))
-      for(i in 1:ncol(pw)){
-        p1 <- quantile(bsNm[pw[1,i], pw[2,i],], prob = c(alpha/2, 1-(alpha/2)))
-        p2 <- quantile(bsNm[pw[2,i], pw[1,i],], prob = c(alpha/2, 1-(alpha/2)))
-        sigMatNm[pw[2,i], pw[1,i]] <- sigDiff(p1, p2)
-        sigMatNm[pw[1,i], pw[2,i]] <- sigDiff(p2, p1)
-      }
-      nmRelbs <- nmRel
-      nmRelbs[!sigMatNm] <- 0
+    }
+    nmRelbs <- nmRel
+    nmRelbs[!sigMatNm] <- 0
+    
+    
+      
     #}
   }
     if(nbs != 0L && !true.nm){

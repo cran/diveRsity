@@ -1,12 +1,12 @@
-\name{divMigrateOnline}
-\alias{divMigrateOnline}
+\name{divMigrateOnline_test}
+\alias{divMigrateOnline_test}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
 An experimental function for the detection of directional differentiation from microsatellite data.
 }
 
 \description{
-\code{divMigrateOnline} uses the method described in Sundqvist \emph{et al.,} 2013 to plot the relative migration levels between population samples, from microsatellite allele frequency data. The method is still in the experimental stages, and it is not clear how well it performs under most evolutionary scenarios. Caution should be exercised.
+\code{divMigrateOnline_test} uses the method described in Sundqvist \emph{et al.,} 2013 to plot the relative migration levels between population samples, from microsatellite allele frequency data. The method is still in the experimental stages, and it is not clear how well it performs under most evolutionary scenarios. Caution should be exercised.
 }
 
 \details{
@@ -14,7 +14,7 @@ The function will except both Arlequin (.arp) genotype and genepop (.gen/.txt) f
 }
 
 \usage{
-divMigrateOnline(infile = NULL, nbs = 0, stat = "all", para = FALSE, 
+divMigrateOnline_test(infile = NULL, nbs = 0, stat = "all", para = FALSE, 
                  true.nm = FALSE, alpha = 0.05)
 }
 \arguments{
