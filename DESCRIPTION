@@ -1,6 +1,6 @@
 Package: diveRsity
-Version: 1.9.89
-Date: 2015-05-08
+Version: 1.9.90
+Date: 2017-03-17
 Title: A Comprehensive, General Purpose Population Genetics Analysis
         Package
 Author: Kevin Keenan <kkeenan02@qub.ac.uk>
@@ -13,9 +13,9 @@ Description: Allows the calculation of both genetic diversity partition
   for pairwise population comparisons, and to plot these results interactively. 
   Parallel computing capabilities and pairwise results without 
   bootstrapping are provided. 
-  Weir and Cockerham's 1984 F-statistics are also calculated. 
-  Various plotting features are also provided, as well as Chi-square tests of 
-  genetic heterogeneity are also provided. 
+  Also calculates F-statistics from Weir and Cockerham (1984). 
+  Various plotting features are provided, as well as Chi-square tests of 
+  genetic heterogeneity. 
   Functionality for the calculation of various diversity parameters is 
   possible for RAD-seq derived SNP data sets containing thousands of marker loci.
   A shiny application for the development of microsatellite multiplexes is 
@@ -28,5 +28,5 @@ Repository: CRAN
 License: GPL (>= 2)
 URL: http://diversityinlife.weebly.com/
 NeedsCompilation: yes
-Packaged: 2015-11-22 12:25:39 UTC; kkeenan
-Date/Publication: 2015-11-22 15:50:56
+Packaged: 2017-04-04 10:05:34 UTC; kkeenan
+Date/Publication: 2017-04-04 10:59:38 UTC
